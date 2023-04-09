@@ -1,0 +1,12 @@
+{
+  "name": "@jakope/beginner-ffmpeg",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/ffmpeg-command-builder.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "type" : "module",
+  "license": "ISC"
+}
