@@ -27,31 +27,31 @@ export default class CommandBuilderNode extends CommandBuilder{
         const folder = path.dirname(outputFilepath);
         await fs.promises.rm(folder + "/*", { recursive: true });
     };
-    async execute () {
-        if(!this.isReady){
-            this.outputTo();
-        }
+    static async execute (command, self) {
+        
         let error, success;
         try {
-            console.log("run",this.command);
-            let self = this;
             const myWriteStream = new Writable({
                 write(data, encoding, callback) {
                     const str = data.toString();
-                    self.processStdOut(str);
+                    if(self){
+                        self.processStdOut(str);
+                    }
                     callback();
                 }
               });  
-              
-            const childProcess = execa(`${pathToFfmpeg}`, this.command, { all: true, stdout : "pipe"  }).pipeAll(myWriteStream)
-            await childProcess;
-            success = true;
-            error = false;
+            const childProcess = execa(`${pathToFfmpeg}`, command, { all: true, stdout : "pipe"  }).pipeAll(myWriteStream)
+            const answer = await childProcess;
+                return {
+                    ...answer,
+                    success : true,
+                    error : false
+                }
+            
         } catch (err) {
          error = err;   
          success = false;
         }
-        console.log("success",success,"error",error);
         return {
             success,
             error

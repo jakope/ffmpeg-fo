@@ -1,19 +1,24 @@
 import ffmpegStandardResolutions from './ffmpeg-resolutions.js';
 import ffmpegStdoutHelper from './ffmpeg-stdout-helpers.js'
-
+import { testHardwareAcceleration } from './ffmpeg-hwaccel.js';
 export default class CommandBuilder{
-    static videocodex = ['-c:v','v',`-profile:v`, 'main','-sc_threshold', '0', '-g', '48'];
+    static findCodex;
+
+    static videocodex = "h264";
     static profiles = ffmpegStandardResolutions;
     static folder;
-    static execute(command){};
+    static execute(command){ console.log("static shit")};
     static createFile(){};
     static createFolder(){};
     static deleteFile(){};
     static deleteFolder(){};
 
+    reencodeVideoIsReady = false;
+    reencodeAudioIsReady = false;
     isReady = false;
     profile;
     inputPath;
+    outputPath;
     
     filterComplex1 = "";
     filterComplex2 = "";
@@ -29,10 +34,25 @@ export default class CommandBuilder{
         return CommandBuilder.folder;
     }
 
-    static initialize(options){
+    async createTestVideo(filepath){
+        
+    }
+
+    static async initialize(options){
         options.profiles && (this.profiles = options.profiles);
         options.videocodex && (this.videocodex = options.videocodex);
+        
         options.folder && (this.folder = options.folder);
+        if(this.folder && options.autoFindHwaccel){
+            const filepath = this.folder + "/test.mp4";
+            // const anwer = await this.execute(`-y -f lavfi -i testsrc=duration=5:size=320x240:rate=30 -pix_fmt yuv420p -t 1 ${filepath}`);
+            // console.log("answer",anwer);
+            const codex = await testHardwareAcceleration(this.execute,this.folder);
+            // console.log("codex",codex);
+            // if(codex.length > 0){
+            //     this.videocodex = codex[0];
+            // }
+        }
         options.exercute && (this.exercute = options.exercute);
         options.createFolder && (this.createFolder = options.createFolder);
         options.createFile && (this.createFile = options.createFile);
@@ -46,37 +66,56 @@ export default class CommandBuilder{
         this.setProfile(profileName);
     }
     async run(){
-        !this.isReady && this.build;
-        await this.execute(this.toString());
+        !this.isReady && this.finalizeCommand();
+        await this.constructor.execute(this.toArray());
         return 
     }
-    processStdOut(){
+    finalizeCommand(){
+        console.log("run",this.reencodeAudioIsReady,this.reencodeVideoIsReady,this.isReady);
+        !this.reencodeVideoIsReady && this.reencodeVideo();
+        !this.reencodeAudioIsReady && this.reencodeAudio();
+        !this.outputPathIsReady && this.outputTo();
+        this.add([this.outputPath]);
+        this.isReady = true;
+        return this;
+    }
+    processStdOut(str){
         if(!this.duration){
             const duration = ffmpegStdoutHelper.extractDuration(str);
             if(duration){
                 //self.bitrate = self.extractBitrate(str);
-                self.duration = duration;
+                this.duration = duration;
             }
         }else{
             const time = ffmpegStdoutHelper.extractTime(str);
             if(time && time != "00:00:00.00"){
-                console.log(ffmpegStdoutHelper.calculateProgress(time,self.duration));
+                console.log(ffmpegStdoutHelper.calculateProgress(time,this.duration));
             }
             
         }
     }
     setProfile(name = "FULLHD", portraitOrLandscape = "portrait"){
-        const profile = CommandBuilder.profiles.find((profile)=>{
-            return profile.name == name
+        console.log("name",name);
+        let profile = CommandBuilder.profiles.find((profile)=>{
+            console.log("profile",profile.names);
+            return profile.names.includes(name)
         });
-        if(portraitOrLandscape == "portrait"){
-            return profile;
+        if(!profile){
+            profile = CommandBuilder.profiles[CommandBuilder.profiles.length - 1];
         }
-        this.profile = {
-            ...profile,
-            height : profile?.widht,
-            width : profile?.height,
+        if(profile){
+            if(portraitOrLandscape == "portrait"){
+                this.profile = profile;
+            }else{
+                this.profile = {
+                    ...profile,
+                    height : profile?.width,
+                    width : profile?.height,
+                }
+            }
         }
+        
+        console.log("this.profile",this.profile);
     }
     stats(){
         this.add(["-f",""]);
@@ -141,7 +180,9 @@ export default class CommandBuilder{
         return this;
     }
     scale(){
-        this.add([`[0:v]   scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=decrease [orig];`]);
+        this.add(['-vf', `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1`]);
+        // this.addFilterComplex1(`[0:v]   scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=increase [orig]`);
+        // this.add([`[0:v]   scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=decrease [orig];`]);
         return this;
     }
     pad(){
@@ -149,24 +190,23 @@ export default class CommandBuilder{
         return this;
     }
     reencodeAudio(){
+        this.reencodeAudioIsReady = true;
         this.add(['-c:a', 'aac', '-ar', '48000',]);
         return this;
     }
     reencodeVideo(){
+        this.reencodeVideoIsReady = true;
         if(this.filterComplex1){
             this.add(['-filter_complex',`${this.filterComplex1}${this.filterComplex2}`,`-map`,`[videoinput${this.overlayInputIndex+1}]`])
         }
-        if(CommandBuilder.videocodex){
-            this.add(CommandBuilder.videocodex);
-        }else{
-            this.add(['-c:v', 'h264', `-profile:v`, 'main', '-crf', '20', '-sc_threshold', '0', '-g', '48']);
-        }
+        this.add(this.profile[CommandBuilder.videocodex]);
         return this;
     }
     build(){
         return this.reencodeVideo().reencodeAudio();
     }
     outputTo(filepath){
+        console.log("outputTo");
         if(!filepath){
             const tmp = this.inputPath.split(".");
             const ext = tmp.pop();
@@ -175,8 +215,8 @@ export default class CommandBuilder{
         if(filepath.indexOf(".mp4") == -1){
             filepath = filepath + ".mp4";
         }
-        this.add([filepath]);
-        this.isReady = true;
+        this.outputPath = filepath;
+        this.outputPathIsReady = true;
         return this;
     }
     logCommand(){

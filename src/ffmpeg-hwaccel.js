@@ -2,22 +2,19 @@ export const testHardwareAcceleration = async function(runFFMPEGCommandCallback,
     console.log("start testing");
     const inputFilePath = `${pathToStoreTestFiles}/test.mov`;
     const outputFilePath = `${pathToStoreTestFiles}/out`;
-    //const answer = await run(`-y -f lavfi -i testsrc -t 1 -c:v prores_ks -profile:v 3 -pix_fmt yuv422p10le -vf "scale=1920:1080" ${inputFilePath}`);
-
-    const createTestVideoResponse = await run(`-y  -f lavfi -i testsrc -t 1 -c:v prores_ks -profile:v 1 -pix_fmt yuv422p10le -vf "scale=1280:720" ${inputFilePath}`);
+    console.log("runFFMPEGCommandCallback",runFFMPEGCommandCallback);
+    console.log("inputFilePath",inputFilePath,outputFilePath);
+    const createTestVideoResponse = await runFFMPEGCommandCallback(`-y -f lavfi -i testsrc=duration=5:size=1280x720:rate=30 -pix_fmt yuv420p -t 1`.split(" ").concat(inputFilePath));
     console.log("createTestVideoResponse",createTestVideoResponse);
-    //return;
-    // Specify the video codec to use for encoding
     const videoCodec = 'h264';
-    console.log("start testing");
-  // Specify the hardware acceleration methods to test
-const hardwareAccelerationMethods = [
-  'cuda',
+  const hardwareAccelerationMethods = [
+  'nvenc',
   'qsv',
   'vaapi',
   'dxva2',
   'amf',
   'videotoolbox',
+  'omx', //android or rasberry py
 ];
 const performanceResults = {};
 const responses = await Promise.all(hardwareAccelerationMethods.map(async (hardwareMethod) => {
