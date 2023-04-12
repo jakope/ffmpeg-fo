@@ -48,10 +48,10 @@ export default class CommandBuilder{
             // const anwer = await this.execute(`-y -f lavfi -i testsrc=duration=5:size=320x240:rate=30 -pix_fmt yuv420p -t 1 ${filepath}`);
             // console.log("answer",anwer);
             const codex = await testHardwareAcceleration(this.execute,this.folder);
-            // console.log("codex",codex);
-            // if(codex.length > 0){
-            //     this.videocodex = codex[0];
-            // }
+            console.log("codex",codex);
+            if(codex.length > 0){
+                this.videocodex = codex[0];
+            }
         }
         options.exercute && (this.exercute = options.exercute);
         options.createFolder && (this.createFolder = options.createFolder);
