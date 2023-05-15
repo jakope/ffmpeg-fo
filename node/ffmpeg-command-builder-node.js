@@ -57,4 +57,19 @@ export default class CommandBuilderNode extends CommandBuilder{
             error
         }
     }
+    static async storeSettings(name,data){
+        console.log("storeSettings",)
+        const filePath = this.folder + "/" + name + ".txt";
+        await this.createFile(filePath,data);
+        return true;
+    }
+    static async loadSettings(name){
+        console.log("loadSettings",name);
+        const filePath = this.folder + "/" + name + ".txt";
+        if(!fs.existsSync(filePath)){
+            console.log("loadSettings file does not exist");
+            return false;
+        }
+        return await fs.promises.readFile(filePath);
+    }
 }

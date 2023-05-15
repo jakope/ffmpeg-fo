@@ -7,7 +7,7 @@
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "",
-    "type" : "module",
+    "type": "module",
     "license": "ISC",
     "dependencies": {
         "execa": "^7.1.1",

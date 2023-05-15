@@ -19,6 +19,8 @@ export default class CommandBuilder{
     profile;
     inputPath;
     outputPath;
+    exportType = "video";
+
     
     filterComplex1 = "";
     filterComplex2 = "";
@@ -37,27 +39,37 @@ export default class CommandBuilder{
     async createTestVideo(filepath){
         
     }
-
+    static async storeSettings(name,data){
+        return false;
+    }
+    static async loadSettings(name){
+        console.log("loadSettings");
+        return false;
+    }
     static async initialize(options){
         options.profiles && (this.profiles = options.profiles);
         options.videocodex && (this.videocodex = options.videocodex);
         
         options.folder && (this.folder = options.folder);
         if(this.folder && options.autoFindHwaccel){
-            const filepath = this.folder + "/test.mp4";
-            // const anwer = await this.execute(`-y -f lavfi -i testsrc=duration=5:size=320x240:rate=30 -pix_fmt yuv420p -t 1 ${filepath}`);
-            // console.log("answer",anwer);
-            const codex = await testHardwareAcceleration(this.execute,this.folder);
-            console.log("codex",codex);
-            if(codex.length > 0){
-                this.videocodex = codex[0];
+            if(!options.forceAutoFindHwaccel && (await this.loadSettings("videocodex"))){
+                this.videocodex = await this.loadSettings("videocodex");
+            }else{
+                const codex = await testHardwareAcceleration(this.execute,this.folder);
+                console.log("codex",codex);
+                if(codex.length > 0){
+                    this.videocodex = codex[0];
+                    this.storeSettings("videocodex",this.videocodex);
+                }
             }
+            
         }
         options.exercute && (this.exercute = options.exercute);
         options.createFolder && (this.createFolder = options.createFolder);
         options.createFile && (this.createFile = options.createFile);
         options.deleteFolder && (this.deleteFolder = options.deleteFolder);
         options.deleteFile && (this.deleteFile = options.deleteFile);
+        return this.videocodex;
     }
     static create(profileName = "FULLHD"){
         return new this(profileName);
@@ -67,13 +79,18 @@ export default class CommandBuilder{
     }
     async run(){
         !this.isReady && this.finalizeCommand();
+        console.log("full command",this.toString());
         await this.constructor.execute(this.toArray());
         return 
     }
+    
     finalizeCommand(){
-        console.log("run",this.reencodeAudioIsReady,this.reencodeVideoIsReady,this.isReady);
-        !this.reencodeVideoIsReady && this.reencodeVideo();
-        !this.reencodeAudioIsReady && this.reencodeAudio();
+        if(this.exportType == "video"){
+            console.log("run",this.reencodeAudioIsReady,this.reencodeVideoIsReady,this.isReady);
+            !this.reencodeVideoIsReady && this.reencodeVideo();
+            !this.reencodeAudioIsReady && this.reencodeAudio();
+            
+        }
         !this.outputPathIsReady && this.outputTo();
         this.add([this.outputPath]);
         this.isReady = true;
@@ -81,10 +98,13 @@ export default class CommandBuilder{
     }
     processStdOut(str){
         if(!this.duration){
-            const duration = ffmpegStdoutHelper.extractDuration(str);
-            if(duration){
+            
+            const durationResponse = ffmpegStdoutHelper.extractDuration(str);
+            console.log("search",durationResponse);
+            if(durationResponse){
                 //self.bitrate = self.extractBitrate(str);
-                this.duration = duration;
+                this.duration = durationResponse.duration;
+                this.durationInSeconds = durationResponse.durationInSeconds;
             }
         }else{
             const time = ffmpegStdoutHelper.extractTime(str);
@@ -114,12 +134,13 @@ export default class CommandBuilder{
                 }
             }
         }
-        
-        console.log("this.profile",this.profile);
     }
-    stats(){
+    async stats(){
         this.add(["-f",""]);
-        return this;
+        const response = await this.constructor.execute(this.toArray());
+        this.processStdOut(response.error);
+        console.log("this.duration",this.duration);
+        return { duration : this.duration, durationInSeconds : this.durationInSeconds};
     }
     add(command){
         this.command = this.command.concat(command);
@@ -129,6 +150,11 @@ export default class CommandBuilder{
     }
     addFilterComplex2(filter){
         this.filterComplex2 += filter;
+    }
+    createThumbnail(){
+        this.exportType = "image";
+        this.add(["-vf", "thumbnail","-frames:v","1"]);
+        return this;
     }
     addOverwriteAndWhitelist(){
         this.add(['-hide_banner', '-y', '-hwaccel', 'auto', '-protocol_whitelist', 'file,http,https,tcp,tls']);
@@ -143,6 +169,10 @@ export default class CommandBuilder{
     addVideoInput(url){
         this.inputPath = url;
         this.addOverwriteAndWhitelist().add([ '-i', url]);
+        return this;
+    }
+    addEmptyVideo(duration = 1, color= "black"){
+        this.addOverwriteAndWhitelist().add(`-f lavfi -i color=${color}:duration=${duration}:size=${this.profile.width}x${this.profile.height}:rate=30,format=rgb24 -pix_fmt yuv420p -t 1`.split(" "));
         return this;
     }
     addOverlay(url, position = "lefttop", percent = 10){
@@ -207,13 +237,17 @@ export default class CommandBuilder{
     }
     outputTo(filepath){
         console.log("outputTo");
+        let extension = ".mp4";
+        if(this.exportType == "image"){
+            extension = ".png";
+        }
         if(!filepath){
             const tmp = this.inputPath.split(".");
             const ext = tmp.pop();
             filepath = tmp.join(".") + "_out." + ext;
         }
-        if(filepath.indexOf(".mp4") == -1){
-            filepath = filepath + ".mp4";
+        if(filepath.indexOf(extension) == -1){
+            filepath = filepath + extension;
         }
         this.outputPath = filepath;
         this.outputPathIsReady = true;

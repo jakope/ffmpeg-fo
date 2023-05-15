@@ -3,7 +3,12 @@ export const extractDuration = function(str){
     const match = regex.exec(str);
 if (match !== null) {
   const duration = match[0];
-  return duration.substring(10);
+  const durationString = duration.substring(10);
+  return {
+    duration : durationString,
+    durationInSeconds : parseTimeToSeconds(durationString)
+  }
+  
 }
 return;
 }
