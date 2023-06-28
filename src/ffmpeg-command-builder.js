@@ -3,7 +3,6 @@ import ffmpegStdoutHelper from './ffmpeg-stdout-helpers.js'
 import { testHardwareAcceleration } from './ffmpeg-hwaccel.js';
 export default class CommandBuilder{
     static findCodex;
-
     static videocodex = "h264";
     static profiles = ffmpegStandardResolutions;
     static folder;
@@ -15,18 +14,20 @@ export default class CommandBuilder{
 
     reencodeVideoIsReady = false;
     reencodeAudioIsReady = false;
+    videocodexToUse;
     isReady = false;
     profile;
     inputPath;
     outputPath;
     exportType = "video";
-
     
+    videoFilter = [];
     filterComplex1 = "";
     filterComplex2 = "";
     overlayInputIndex = 0;
     
     command = [];
+    commandBeforeInput = [];
     
     duration;
     bitrate;
@@ -35,7 +36,6 @@ export default class CommandBuilder{
     getFolder(){
         return CommandBuilder.folder;
     }
-
     async createTestVideo(filepath){
         
     }
@@ -49,7 +49,6 @@ export default class CommandBuilder{
     static async initialize(options){
         options.profiles && (this.profiles = options.profiles);
         options.videocodex && (this.videocodex = options.videocodex);
-        
         options.folder && (this.folder = options.folder);
         if(this.folder && options.autoFindHwaccel){
             if(!options.forceAutoFindHwaccel && (await this.loadSettings("videocodex"))){
@@ -62,25 +61,29 @@ export default class CommandBuilder{
                     this.storeSettings("videocodex",this.videocodex);
                 }
             }
-            
         }
+        
         options.exercute && (this.exercute = options.exercute);
-        options.createFolder && (this.createFolder = options.createFolder);
+        options.Folder && (this.createFolder = options.createFolder);
         options.createFile && (this.createFile = options.createFile);
         options.deleteFolder && (this.deleteFolder = options.deleteFolder);
         options.deleteFile && (this.deleteFile = options.deleteFile);
         return this.videocodex;
     }
     static create(profileName = "FULLHD"){
-        return new this(profileName);
+        return new this(profileName,this.videocodex);
     }
-    constructor(profileName){
+    static createSilectAudio(){
+        
+    }
+    constructor(profileName,videocodex){
+        this.videocodexToUse = videocodex;
         this.setProfile(profileName);
     }
     async run(){
         !this.isReady && this.finalizeCommand();
         console.log("full command",this.toString());
-        await this.constructor.execute(this.toArray());
+        await this.constructor.execute(this.toArray(),this);
         return 
     }
     
@@ -88,8 +91,7 @@ export default class CommandBuilder{
         if(this.exportType == "video"){
             console.log("run",this.reencodeAudioIsReady,this.reencodeVideoIsReady,this.isReady);
             !this.reencodeVideoIsReady && this.reencodeVideo();
-            !this.reencodeAudioIsReady && this.reencodeAudio();
-            
+            !this.reencodeAudioIsReady && this.reencodeAudio();   
         }
         !this.outputPathIsReady && this.outputTo();
         this.add([this.outputPath]);
@@ -145,6 +147,9 @@ export default class CommandBuilder{
     add(command){
         this.command = this.command.concat(command);
     }
+    addBeforeInput(command){
+        this.commandBeforeInput = this.commandBeforeInput.concat(command);
+    }
     addFilterComplex1(filter){
         this.filterComplex1 += filter;
     }
@@ -156,11 +161,18 @@ export default class CommandBuilder{
         this.add(["-vf", "thumbnail","-frames:v","1"]);
         return this;
     }
-    addOverwriteAndWhitelist(){
-        this.add(['-hide_banner', '-y', '-hwaccel', 'auto', '-protocol_whitelist', 'file,http,https,tcp,tls']);
+    createFreezeFrame(second = 0, duration = 1){
+        this.addBeforeInput(["-ss",second]);
+        this.add(['-t',duration]);
+        this.videoFilter.push(`select='eq(n,${second})'`);
+        this.videoFilter.push("fps=1");
+        this.add(["-af","volume=0"]);
         return this;
     }
-
+    addOverwriteAndWhitelist(){
+        this.addBeforeInput(['-hide_banner', '-y', '-hwaccel', 'auto', '-protocol_whitelist', 'file,http,https,tcp,tls']);
+        return this;
+    }
     /* start functions */
     addImageInput(url, duration = 1){
         this.addOverwriteAndWhitelist().add(['-loop','1','-i', url,'-f','lavfi','-i',`anullsrc=channel_layout=stereo:sample_rate=48000`,'-t',duration, '-framerate','1',]);
@@ -209,14 +221,16 @@ export default class CommandBuilder{
         this.add(['-ss', start,'-to', end,'-avoid_negative_ts','make_zero','-copyts'])
         return this;
     }
-    scale(){
-        this.add(['-vf', `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1`]);
-        // this.addFilterComplex1(`[0:v]   scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=increase [orig]`);
-        // this.add([`[0:v]   scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=decrease [orig];`]);
+    scale(type){
+        if(type=="pad"){
+            this.videoFilter.push(`scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1,pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`);
+        }else{
+            this.videoFilter.push(`scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1`);    
+        }
         return this;
     }
     pad(){
-        this.add(['-vf', `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1,pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`]);
+        this.scale("pad");
         return this;
     }
     reencodeAudio(){
@@ -226,10 +240,13 @@ export default class CommandBuilder{
     }
     reencodeVideo(){
         this.reencodeVideoIsReady = true;
+        if(this.videoFilter.length > 0){
+            this.add(['-vf',this.videoFilter.join(",")]);
+        }
         if(this.filterComplex1){
             this.add(['-filter_complex',`${this.filterComplex1}${this.filterComplex2}`,`-map`,`[videoinput${this.overlayInputIndex+1}]`])
         }
-        this.add(this.profile[CommandBuilder.videocodex]);
+        this.add(this.profile[this.videocodexToUse]);
         return this;
     }
     build(){
@@ -254,14 +271,14 @@ export default class CommandBuilder{
         return this;
     }
     logCommand(){
-        console.log("logCommand",this.command.join(" "));
+        console.log("logCommand",this.toString());
         return this;
     }
     toString(){
-        return this.command.join(" ");
+        return this.commandBeforeInput.join(" ") + " " + this.command.join(" ");
     }
     toArray(){
-        return this.command;
+        return this.commandBeforeInput.concat(this.command);
     }
     checkMerge(){
         // todo

@@ -27,8 +27,8 @@ export default class CommandBuilderNode extends CommandBuilder{
         const folder = path.dirname(outputFilepath);
         await fs.promises.rm(folder + "/*", { recursive: true });
     };
-    static async execute (command, self) {
-        
+    static async execute(command, self) {
+        console.log("self",self);
         let error, success;
         try {
             const myWriteStream = new Writable({
@@ -40,8 +40,10 @@ export default class CommandBuilderNode extends CommandBuilder{
                     callback();
                 }
               });  
-            const childProcess = execa(`${pathToFfmpeg}`, command, { all: true, stdout : "pipe"  }).pipeAll(myWriteStream)
+            const childProcess = execa(`${pathToFfmpeg}`, command, { all: true, stdout : "pipe" }).pipeAll(myWriteStream)
+            
             const answer = await childProcess;
+            console.log("answer",answer.all);
                 return {
                     ...answer,
                     success : true,
@@ -49,6 +51,7 @@ export default class CommandBuilderNode extends CommandBuilder{
                 }
             
         } catch (err) {
+            console.log("catch",err.all);
          error = err;   
          success = false;
         }
@@ -70,6 +73,6 @@ export default class CommandBuilderNode extends CommandBuilder{
             console.log("loadSettings file does not exist");
             return false;
         }
-        return await fs.promises.readFile(filePath);
+        return await fs.promises.readFile(filePath,"utf8");
     }
 }
