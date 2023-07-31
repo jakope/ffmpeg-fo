@@ -12,6 +12,7 @@ export default class CommandBuilder{
     static deleteFile(){};
     static deleteFolder(){};
 
+    progressCallback; //function
     reencodeVideoIsReady = false;
     reencodeAudioIsReady = false;
     videocodexToUse;
@@ -36,6 +37,9 @@ export default class CommandBuilder{
     getFolder(){
         return CommandBuilder.folder;
     }
+    static async fileExists(filepath){
+        return false;
+    }
     async createTestVideo(filepath){
         
     }
@@ -46,47 +50,59 @@ export default class CommandBuilder{
         console.log("loadSettings");
         return false;
     }
-    static async initialize(options){
+    static async initialize(options = {}){
         options.profiles && (this.profiles = options.profiles);
         options.videocodex && (this.videocodex = options.videocodex);
         options.folder && (this.folder = options.folder);
+        options.folderAsync && (this.folder = await options.folderAsync);
         if(this.folder && options.autoFindHwaccel){
+            console.log("this.folder",this.folder)
             if(!options.forceAutoFindHwaccel && (await this.loadSettings("videocodex"))){
                 this.videocodex = await this.loadSettings("videocodex");
             }else{
-                const codex = await testHardwareAcceleration(this.execute,this.folder);
+                const codex = await testHardwareAcceleration(this.execute,this.folder,this.fileExists);
                 console.log("codex",codex);
                 if(codex.length > 0){
                     this.videocodex = codex[0];
                     this.storeSettings("videocodex",this.videocodex);
+                    console.log("stored");
                 }
             }
         }
         
         options.exercute && (this.exercute = options.exercute);
-        options.Folder && (this.createFolder = options.createFolder);
+        options.createFolder && (this.createFolder = options.createFolder);
         options.createFile && (this.createFile = options.createFile);
         options.deleteFolder && (this.deleteFolder = options.deleteFolder);
         options.deleteFile && (this.deleteFile = options.deleteFile);
         return this.videocodex;
     }
     static create(profileName = "FULLHD"){
-        return new this(profileName,this.videocodex);
+        console.log("ffmpeg CommandBuilder created with codex",this.videocodex);
+        return new this(profileName,{ videocodex : this.videocodex });
     }
     static createSilectAudio(){
         
     }
-    constructor(profileName,videocodex){
-        this.videocodexToUse = videocodex;
+    constructor(profileName,options = {}){
+        this.videocodexToUse = options.videocodex || this.videocodex;
+        
+        if(options.progressEventName){
+            this.progressEventName = options.progressEventName;
+        }
         this.setProfile(profileName);
     }
     async run(){
         !this.isReady && this.finalizeCommand();
         console.log("full command",this.toString());
-        await this.constructor.execute(this.toArray(),this);
-        return 
+        const answer = await this.constructor.execute(this.toArray(),this);
+        this.setProgress({ progress : 100, estimatedTimeRemaining : "00:00:00"});
+        return answer;
     }
-    
+    onProgress(progressCallbackFunction){
+        this.progressCallback = progressCallbackFunction;
+        return this;
+    }
     finalizeCommand(){
         if(this.exportType == "video"){
             console.log("run",this.reencodeAudioIsReady,this.reencodeVideoIsReady,this.isReady);
@@ -100,7 +116,6 @@ export default class CommandBuilder{
     }
     processStdOut(str){
         if(!this.duration){
-            
             const durationResponse = ffmpegStdoutHelper.extractDuration(str);
             console.log("search",durationResponse);
             if(durationResponse){
@@ -111,10 +126,16 @@ export default class CommandBuilder{
         }else{
             const time = ffmpegStdoutHelper.extractTime(str);
             if(time && time != "00:00:00.00"){
-                console.log(ffmpegStdoutHelper.calculateProgress(time,this.duration));
+                const progressRelevantDuration = this.progressDuration || this.duration
+                const progress = ffmpegStdoutHelper.calculateProgress(time,progressRelevantDuration);
+                this.setProgress(progress);
             }
             
         }
+    }
+    setProgress(progress){
+        this.progress = progress;
+        this.progressCallback && this.progressCallback(this.progress);
     }
     setProfile(name = "FULLHD", portraitOrLandscape = "portrait"){
         console.log("name",name);
@@ -218,6 +239,31 @@ export default class CommandBuilder{
         return this;
     }
     cut(start,end){
+        
+        // timestamp can be in many formats, so convert to seconds. Examples: hh:mm:ss, mm:ss, ss, hh:mm:ss.ms, mm:ss.ms, ss.ms
+        const timestampToSeconds = (timestamp) => {
+            let parts = timestamp.split(':');
+            let seconds = 0;
+            if (parts.length === 3) {
+                seconds = parseInt(parts[0]) * 60 * 60 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+            } else if (parts.length === 2) {
+                seconds = parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+            } else {
+                seconds = parseFloat(parts[0]);
+            }
+            return seconds;
+        }
+        
+        const secondsToTimestamp = (seconds) => {
+            const date = new Date(null);
+            date.setSeconds(seconds);
+            return date.toISOString().substr(11, 8);
+        }
+        this.progressDuration = secondsToTimestamp(timestampToSeconds(end) - timestampToSeconds(start));
+        const seekStartInSeconds = timestampToSeconds(start) - 10;
+        if(seekStartInSeconds > 0){
+            this.addBeforeInput(['-ss', secondsToTimestamp(seekStartInSeconds)]);
+        }
         this.add(['-ss', start,'-to', end,'-avoid_negative_ts','make_zero','-copyts'])
         return this;
     }
