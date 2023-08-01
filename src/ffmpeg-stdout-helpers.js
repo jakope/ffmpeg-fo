@@ -22,10 +22,18 @@ if (match !== null) {
 return;
 }
 
-export const parseTimeToSeconds = function(timeString) {
-    const [hours, minutes, seconds] = timeString.split(':').map(parseFloat);
-    return (hours * 60 * 60) + (minutes * 60) + seconds;
+export const parseTimeToSeconds = (timestamp) => {
+  let parts = timestamp.split(':');
+  let seconds = 0;
+  if (parts.length === 3) {
+      seconds = parseInt(parts[0]) * 60 * 60 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
+  } else if (parts.length === 2) {
+      seconds = parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+  } else {
+      seconds = parseFloat(parts[0]);
   }
+  return seconds;
+}
   
   export const formatSecondsAsTime = function(totalSeconds) {
     const hours = Math.floor(totalSeconds / 3600);

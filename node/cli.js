@@ -39,13 +39,13 @@ function readFilesFromFolder(folderPath) {
       });
     });
   }
-//const __dirname = path.parse(inputVideo).dir;
+//const mydirname = path.parse(inputVideo).dir;
 
-const __dirname = "/Users/janoskoschwitz/src/testfiles";
-const outputdirname = `${dirname}/output`;
-console.log("__dirname",__dirname);
+const mydirname = "/Users/janoskoschwitz/src/testfiles";
+const outputdirname = `${mydirname}/output`;
+console.log("mydirname",mydirname);
 //const inputVideo = process.argv[2];
-//console.log("inputVideo",inputVideo,__dirname);
+//console.log("inputVideo",inputVideo,mydirname);
 
 
 // ffmpegCommander.create("FULLHD").addVideoInput(inputVideo).scale().outputTo(inputVideo.replace(".mp4","_h264.mp4")).run();
@@ -55,26 +55,28 @@ console.log("__dirname",__dirname);
 //     ffmpegCommander.create("FULLHD").addVideoInput(inputVideo).createThumbnail().outputTo(inputVideo.replace(".mp4",".png")).logCommand().run();
 // });
 
-// ffmpegCommander.initialize({ folder : __dirname, autoFindHwaccel : true}).then(()=>{
+// ffmpegCommander.initialize({ folder : mydirname, autoFindHwaccel : true}).then(()=>{
 //     ffmpegCommander.create("FULLHD").addVideoInput(inputVideo).scale().outputTo(inputVideo.replace(".mp4","_hwaccel.mp4")).run();
 // })
 
 
-ffmpegCommander.initialize({ folder : __dirname, autoFindHwaccel : true}).then(async ()=>{
+ffmpegCommander.initialize({ folder : mydirname, autoFindHwaccel : true}).then(async ()=>{
     console.log("hwaccel",ffmpegCommander);
-    const videos = await readFilesFromFolder(__dirname + "/videos");
-    const images = await readFilesFromFolder(__dirname + "/images");
+    const videos = await readFilesFromFolder(mydirname + "/videos");
+    const images = await readFilesFromFolder(mydirname + "/images");
     
     for (const file of videos) {
         console.log(`start with ${file.filename} format= ${file.fileextension}`);
-        await ffmpegCommander.create("FULLHD").addVideoInput(file.absolutefilepath).pad().outputTo(`${outputdirname}/${file.filename}.${file.fileextension}`).run();
+        console.log("caro123123",`${outputdirname}/${file.filename}.${file.fileextension}`);
+        // await ffmpegCommander.create("FULLHD").addVideoInput(file.absolutefilepath).pad().outputTo(`${outputdirname}/${file.filename}.${file.fileextension}`).run();
+        await ffmpegCommander.create("FULLHD").addVideoInput(file.absolutefilepath).createFreezeFrame("1.263762999999983","2").scale("pad").outputTo(`${outputdirname}/${file.filename}_freeze.${file.fileextension}`).run();
         console.log(`end with ${file.filename} format= ${file.fileextension}`);
     }
-    for (const file of images) {
-        console.log(`start with ${file.filename} format= ${file.fileextension}`);
-        await ffmpegCommander.create("FULLHD").addVideoInput(file.absolutefilepath).pad().outputTo(`${outputdirname}/${file.filename}.${file.fileextension}`).run();
-        console.log(`end with ${file.filename} format= ${file.fileextension}`);
-    }
+    // for (const file of images) {
+    //     console.log(`start with ${file.filename} format= ${file.fileextension}`);
+    //     await ffmpegCommander.create("FULLHD").addVideoInput(file.absolutefilepath).pad().outputTo(`${outputdirname}/${file.filename}.${file.fileextension}`).run();
+    //     console.log(`end with ${file.filename} format= ${file.fileextension}`);
+    // }
     console.log("all done");
-    //await ffmpegCommander.create("FULLHD").addVideoInput(inputVideo).createFreezeFrame(1,2).scale().outputTo(inputVideo.replace(".mp4","_freeze.mp4")).logCommand().run();
+    
 })

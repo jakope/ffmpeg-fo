@@ -183,10 +183,10 @@ export default class CommandBuilder{
         return this;
     }
     createFreezeFrame(second = 0, duration = 1){
-        this.addBeforeInput(["-ss",second]);
-        this.add(['-t',duration]);
+        this.addBeforeInput(["-ss",second + ""]);
+        this.add(['-t',duration + ""]);
         this.videoFilter.push(`select='eq(n,${second})'`);
-        this.videoFilter.push("fps=1");
+        this.videoFilter.push("fps=25");
         this.add(["-af","volume=0"]);
         return this;
     }
@@ -239,33 +239,16 @@ export default class CommandBuilder{
         return this;
     }
     cut(start,end){
-        
-        // timestamp can be in many formats, so convert to seconds. Examples: hh:mm:ss, mm:ss, ss, hh:mm:ss.ms, mm:ss.ms, ss.ms
-        const timestampToSeconds = (timestamp) => {
-            let parts = timestamp.split(':');
-            let seconds = 0;
-            if (parts.length === 3) {
-                seconds = parseInt(parts[0]) * 60 * 60 + parseInt(parts[1]) * 60 + parseFloat(parts[2]);
-            } else if (parts.length === 2) {
-                seconds = parseInt(parts[0]) * 60 + parseFloat(parts[1]);
-            } else {
-                seconds = parseFloat(parts[0]);
-            }
-            return seconds;
-        }
-        
-        const secondsToTimestamp = (seconds) => {
-            const date = new Date(null);
-            date.setSeconds(seconds);
-            return date.toISOString().substr(11, 8);
-        }
-        this.progressDuration = secondsToTimestamp(timestampToSeconds(end) - timestampToSeconds(start));
-        const seekStartInSeconds = timestampToSeconds(start) - 10;
-        if(seekStartInSeconds > 0){
-            this.addBeforeInput(['-ss', secondsToTimestamp(seekStartInSeconds)]);
-        }
+        this.fastSeek(ffmpegStdoutHelper.parseTimeToSeconds(start));
+        this.progressDuration = ffmpegStdoutHelper.formatSecondsAsTime(ffmpegStdoutHelper.parseTimeToSeconds(end) - ffmpegStdoutHelper.parseTimeToSeconds(start));
         this.add(['-ss', start,'-to', end,'-avoid_negative_ts','make_zero','-copyts'])
         return this;
+    }
+    fastSeek(startInSeconds){
+        const seekStartInSeconds = startInSeconds - 10;
+        if(seekStartInSeconds > 0){
+            this.addBeforeInput(['-ss', ffmpegStdoutHelper.formatSecondsAsTime(seekStartInSeconds)]);
+        }
     }
     scale(type){
         if(type=="pad"){

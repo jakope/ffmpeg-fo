@@ -28,7 +28,6 @@ export default class CommandBuilderNode extends CommandBuilder{
         await fs.promises.rm(folder + "/*", { recursive: true });
     };
     static async execute(command, self) {
-        console.log("self",self);
         let error, success;
         try {
             const myWriteStream = new Writable({
@@ -41,7 +40,6 @@ export default class CommandBuilderNode extends CommandBuilder{
                 }
               });  
             const childProcess = execa(`${pathToFfmpeg}`, command, { all: true, stdout : "pipe" }).pipeAll(myWriteStream)
-            
             const answer = await childProcess;
             console.log("answer",answer.all);
                 return {
