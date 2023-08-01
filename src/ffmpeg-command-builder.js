@@ -29,6 +29,7 @@ export default class CommandBuilder{
     
     command = [];
     commandBeforeInput = [];
+    commandAfterCodex = [];
     
     duration;
     bitrate;
@@ -69,7 +70,6 @@ export default class CommandBuilder{
                 }
             }
         }
-        
         options.exercute && (this.exercute = options.exercute);
         options.createFolder && (this.createFolder = options.createFolder);
         options.createFile && (this.createFile = options.createFile);
@@ -95,7 +95,14 @@ export default class CommandBuilder{
     async run(){
         !this.isReady && this.finalizeCommand();
         console.log("full command",this.toString());
-        const answer = await this.constructor.execute(this.toArray(),this);
+        let commandArray = this.toArray();
+        if(this.mergeFileText){
+            console.log("mergeFileText",this.mergeFileText);
+            await this.constructor.createFile(this.constructor.folder + "/merge.txt",this.mergeFileText);
+            console.log("after Create file");
+            commandArray[this.toArray().findIndex((command)=>{ return command == "###MERGEPATH###" })] = this.constructor.folder + "/merge.txt";
+        }
+        const answer = await this.constructor.execute(commandArray,this);
         this.setProgress({ progress : 100, estimatedTimeRemaining : "00:00:00"});
         return answer;
     }
@@ -110,7 +117,6 @@ export default class CommandBuilder{
             !this.reencodeAudioIsReady && this.reencodeAudio();   
         }
         !this.outputPathIsReady && this.outputTo();
-        this.add([this.outputPath]);
         this.isReady = true;
         return this;
     }
@@ -168,6 +174,9 @@ export default class CommandBuilder{
     add(command){
         this.command = this.command.concat(command);
     }
+    addAfterCodex(command){
+        this.commandAfterCodex = this.commandAfterCodex.concat(command);
+    }
     addBeforeInput(command){
         this.commandBeforeInput = this.commandBeforeInput.concat(command);
     }
@@ -182,11 +191,17 @@ export default class CommandBuilder{
         this.add(["-vf", "thumbnail","-frames:v","1"]);
         return this;
     }
+    createImage(second){
+        this.exportType = "image";
+        this.addBeforeInput(["-ss",second + ""]);
+        this.add(["-frames:v","1","-q:v","2" ]);
+        return this;
+    }
     createFreezeFrame(second = 0, duration = 1){
         this.addBeforeInput(["-ss",second + ""]);
-        this.add(['-t',duration + ""]);
+        this.add(['-t',ffmpegStdoutHelper.formatSecondsAsTime(duration)]);
         this.videoFilter.push(`select='eq(n,${second})'`);
-        this.videoFilter.push("fps=25");
+        this.videoFilter.push("fps=1");
         this.add(["-af","volume=0"]);
         return this;
     }
@@ -196,7 +211,9 @@ export default class CommandBuilder{
     }
     /* start functions */
     addImageInput(url, duration = 1){
-        this.addOverwriteAndWhitelist().add(['-loop','1','-i', url,'-f','lavfi','-i',`anullsrc=channel_layout=stereo:sample_rate=48000`,'-t',duration, '-framerate','1',]);
+        this.addOverwriteAndWhitelist().add(['-loop','1','-i', url]);
+        // '-f','lavfi','-i',`anullsrc=channel_layout=stereo:sample_rate=48000`
+        this.addAfterCodex(['-t',duration, '-framerate','1']);
         return this;
     }
     addVideoInput(url){
@@ -304,10 +321,10 @@ export default class CommandBuilder{
         return this;
     }
     toString(){
-        return this.commandBeforeInput.join(" ") + " " + this.command.join(" ");
+        return this.commandBeforeInput.join(" ") + " " + this.command.join(" ") + " " + this.commandAfterCodex.join(" ") + " " + this.outputPath;
     }
     toArray(){
-        return this.commandBeforeInput.concat(this.command);
+        return this.commandBeforeInput.concat(this.command,this.commandAfterCodex,[this.outputPath]);
     }
     checkMerge(){
         // todo
@@ -317,8 +334,11 @@ export default class CommandBuilder{
         for (const input of inputs) {
             concatText += "file '" + input + "'\n";    
         }        
-        const mergeTxtPath = callbackToWriteConcatFile(concatText);
-        this.addOverwriteAndWhitelist().add(['-f','concat','-safe','0','-i',mergeTxtPath,'-c','copy',]);
+        //const mergeTxtPath = callbackToWriteConcatFile(concatText);
+        this.mergeFileText = concatText;
+        this.addOverwriteAndWhitelist().add(['-f','concat','-safe','0','-i',"###MERGEPATH###",'-c','copy']);
+        this.reencodeVideoIsReady = true;
+        this.reencodeAudioIsReady = true;
       return this;
     }
 }

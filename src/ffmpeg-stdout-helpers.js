@@ -35,7 +35,8 @@ export const parseTimeToSeconds = (timestamp) => {
   return seconds;
 }
   
-  export const formatSecondsAsTime = function(totalSeconds) {
+  export const formatSecondsAsTime = function(secondsToFormat) {
+    const totalSeconds = Math.floor(secondsToFormat);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = Math.floor(totalSeconds % 60);
