@@ -267,6 +267,10 @@ export default class CommandBuilder{
             this.addBeforeInput(['-ss', ffmpegStdoutHelper.formatSecondsAsTime(seekStartInSeconds)]);
         }
     }
+    normalizeSpeed(){
+        this.videoFilter.push("fps=fps=30");
+        return this;
+    }
     scale(type){
         if(type=="pad"){
             this.videoFilter.push(`scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1,pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`);
@@ -275,6 +279,7 @@ export default class CommandBuilder{
         }
         return this;
     }
+    
     pad(){
         this.scale("pad");
         return this;
@@ -329,12 +334,11 @@ export default class CommandBuilder{
     checkMerge(){
         // todo
     }
-    merge(inputs, callbackToWriteConcatFile){
+    merge(inputs){
         let concatText = "";
         for (const input of inputs) {
             concatText += "file '" + input + "'\n";    
-        }        
-        //const mergeTxtPath = callbackToWriteConcatFile(concatText);
+        }
         this.mergeFileText = concatText;
         this.addOverwriteAndWhitelist().add(['-f','concat','-safe','0','-i',"###MERGEPATH###",'-c','copy']);
         this.reencodeVideoIsReady = true;
