@@ -14,7 +14,6 @@ export default class CommandBuilder {
   static deleteFile() {}
   static deleteFolder() {}
 
-  progressCallback; //function
   reencodeVideoIsReady = false;
   reencodeAudioIsReady = false;
   videocodexToUse;
@@ -37,20 +36,55 @@ export default class CommandBuilder {
   bitrate;
   progress;
 
+  constructor(profileName, options = {}) {
+    this.videocodexToUse = options.videocodex || this.videocodex;
+
+    if (options.progressEventName) {
+      this.progressEventName = options.progressEventName;
+    }
+
+    if (profileName) {
+      this.setProfile(profileName);
+    }
+
+    this.onProgressFn = () => {};
+    this.onErrorFn = () => {};
+  }
+
+  onProgress(onProgress) {
+    this.onProgressFn = onProgress;
+    return this;
+  }
+
+  onError(onError) {
+    this.onErrorFn = onError;
+    return this;
+  }
+
+  handleProgress = (event) => {
+    console.log('Progress: ', event);
+    this.onProgressFn({ percentage: event.progress });
+  };
+
   getFolder() {
     return CommandBuilder.folder;
   }
+
   static async fileExists(filepath) {
     return false;
   }
+
   async createTestVideo(filepath) {}
+
   static async storeSettings(name, data) {
     return false;
   }
+
   static async loadSettings(name) {
     console.log('loadSettings');
     return false;
   }
+
   static async initialize(options = {}) {
     options.profiles && (this.profiles = options.profiles);
     options.videocodex && (this.videocodex = options.videocodex);
@@ -77,51 +111,52 @@ export default class CommandBuilder {
         }
       }
     }
-    options.exercute && (this.exercute = options.exercute);
+    options.execute && (this.execute = options.execute);
     options.createFolder && (this.createFolder = options.createFolder);
     options.createFile && (this.createFile = options.createFile);
     options.deleteFolder && (this.deleteFolder = options.deleteFolder);
     options.deleteFile && (this.deleteFile = options.deleteFile);
     return this.videocodex;
   }
+
   static create(profileName = 'FULLHD') {
     console.log('ffmpeg CommandBuilder created with codex', this.videocodex);
     return new this(profileName, { videocodex: this.videocodex });
   }
-  static createSilectAudio() {}
-  constructor(profileName, options = {}) {
-    this.videocodexToUse = options.videocodex || this.videocodex;
 
-    if (options.progressEventName) {
-      this.progressEventName = options.progressEventName;
-    }
-    this.setProfile(profileName);
-  }
+  static createSilectAudio() {}
+
   async run() {
     !this.isReady && this.finalizeCommand();
-    console.log('full command', this.toString());
-    let commandArray = this.toArray();
-    if (this.mergeFileText) {
-      console.log('mergeFileText', this.mergeFileText);
-      await this.constructor.createFile(
-        this.constructor.folder + '/merge.txt',
-        this.mergeFileText,
-      );
-      console.log('after Create file');
-      commandArray[
-        this.toArray().findIndex((command) => {
-          return command == '###MERGEPATH###';
-        })
-      ] = this.constructor.folder + '/merge.txt';
+
+    try {
+      let commandArray = this.toArray();
+      if (this.mergeFileText) {
+        console.log('mergeFileText', this.mergeFileText);
+        await this.constructor.createFile(
+          this.constructor.folder + '/merge.txt',
+          this.mergeFileText,
+        );
+
+        commandArray[
+          this.toArray().findIndex((command) => {
+            return command == '###MERGEPATH###';
+          })
+        ] = this.constructor.folder + '/merge.txt';
+      }
+
+      const answer = await this.constructor.execute(commandArray, this);
+
+      console.log('CommandArray CB After Execute', answer, commandArray);
+
+      this.setProgress({ progress: 100, estimatedTimeRemaining: '00:00:00' });
+
+      return answer;
+    } catch (error) {
+      this.onErrorFn(error);
     }
-    const answer = await this.constructor.execute(commandArray, this);
-    this.setProgress({ progress: 100, estimatedTimeRemaining: '00:00:00' });
-    return answer;
   }
-  onProgress(progressCallbackFunction) {
-    this.progressCallback = progressCallbackFunction;
-    return this;
-  }
+
   finalizeCommand() {
     if (this.exportType == 'video') {
       console.log(
@@ -137,6 +172,7 @@ export default class CommandBuilder {
     this.isReady = true;
     return this;
   }
+
   processStdOut(str) {
     if (!this.duration) {
       const durationResponse = ffmpegStdoutHelper.extractDuration(str);
@@ -158,10 +194,12 @@ export default class CommandBuilder {
       }
     }
   }
+
   setProgress(progress) {
     this.progress = progress;
-    this.progressCallback && this.progressCallback(this.progress);
+    this.onProgressFn(this.progress);
   }
+
   setProfile(name = 'FULLHD', portraitOrLandscape = 'portrait') {
     console.log('name', name);
     let profile = CommandBuilder.profiles.find((profile) => {
@@ -183,6 +221,7 @@ export default class CommandBuilder {
       }
     }
   }
+
   async stats() {
     this.add(['-f', '']);
     const response = await this.constructor.execute(this.toArray(), this);
@@ -193,32 +232,40 @@ export default class CommandBuilder {
       durationInSeconds: this.durationInSeconds,
     };
   }
+
   add(command) {
     this.command = this.command.concat(command);
   }
+
   addAfterCodex(command) {
     this.commandAfterCodex = this.commandAfterCodex.concat(command);
   }
+
   addBeforeInput(command) {
     this.commandBeforeInput = this.commandBeforeInput.concat(command);
   }
+
   addFilterComplex1(filter) {
     this.filterComplex1 += filter;
   }
+
   addFilterComplex2(filter) {
     this.filterComplex2 += filter;
   }
+
   createThumbnail() {
     this.exportType = 'image';
     this.add(['-vf', 'thumbnail', '-frames:v', '1']);
     return this;
   }
+
   createImage(second) {
     this.exportType = 'image';
     this.addBeforeInput(['-ss', second + '']);
     this.add(['-frames:v', '1', '-q:v', '2']);
     return this;
   }
+
   createFreezeFrame(second = 0, duration = 1) {
     this.addBeforeInput(['-ss', second + '']);
     this.add(['-t', ffmpegStdoutHelper.formatSecondsAsTime(duration)]);
@@ -227,6 +274,7 @@ export default class CommandBuilder {
     this.add(['-af', 'volume=0']);
     return this;
   }
+
   addOverwriteAndWhitelist() {
     this.addBeforeInput([
       '-hide_banner',
@@ -238,6 +286,7 @@ export default class CommandBuilder {
     ]);
     return this;
   }
+
   /* start functions */
   addImageInput(url, duration = 1) {
     this.addOverwriteAndWhitelist().add(['-loop', '1', '-i', url]);
@@ -245,11 +294,13 @@ export default class CommandBuilder {
     this.addAfterCodex(['-t', duration, '-framerate', '1']);
     return this;
   }
+
   addVideoInput(url) {
     this.inputPath = url;
     this.addOverwriteAndWhitelist().add(['-i', url]);
     return this;
   }
+
   addEmptyVideo(duration = 1, color = 'black') {
     this.addOverwriteAndWhitelist().add(
       `-f lavfi -i color=${color}:duration=${duration}:size=${this.profile.width}x${this.profile.height}:rate=30,format=rgb24 -pix_fmt yuv420p -t 1`.split(
@@ -258,6 +309,7 @@ export default class CommandBuilder {
     );
     return this;
   }
+
   addOverlay(url, position = 'lefttop', percent = 10) {
     this.add(['-i', url]);
 
@@ -296,6 +348,7 @@ export default class CommandBuilder {
     );
     return this;
   }
+
   cut(start, end) {
     this.fastSeek(ffmpegStdoutHelper.parseTimeToSeconds(start));
     this.progressDuration = ffmpegStdoutHelper.formatSecondsAsTime(
@@ -313,6 +366,7 @@ export default class CommandBuilder {
     ]);
     return this;
   }
+
   fastSeek(startInSeconds) {
     const seekStartInSeconds = startInSeconds - 10;
     if (seekStartInSeconds > 0) {
@@ -322,10 +376,12 @@ export default class CommandBuilder {
       ]);
     }
   }
+
   normalizeSpeed() {
     this.videoFilter.push('fps=fps=30');
     return this;
   }
+
   scale(type) {
     if (type == 'pad') {
       this.videoFilter.push(
@@ -343,11 +399,13 @@ export default class CommandBuilder {
     this.scale('pad');
     return this;
   }
+
   reencodeAudio() {
     this.reencodeAudioIsReady = true;
     this.add(['-c:a', 'aac', '-ar', '48000']);
     return this;
   }
+
   reencodeVideo() {
     this.reencodeVideoIsReady = true;
     if (this.videoFilter.length > 0) {
@@ -364,9 +422,11 @@ export default class CommandBuilder {
     this.add(this.profile[this.videocodexToUse]);
     return this;
   }
+
   build() {
     return this.reencodeVideo().reencodeAudio();
   }
+
   outputTo(filepath) {
     console.log('outputTo');
     let extension = '.mp4';
@@ -385,10 +445,12 @@ export default class CommandBuilder {
     this.outputPathIsReady = true;
     return this;
   }
+
   logCommand() {
     console.log('logCommand', this.toString());
     return this;
   }
+
   toString() {
     return (
       this.commandBeforeInput.join(' ') +
@@ -400,6 +462,7 @@ export default class CommandBuilder {
       this.outputPath
     );
   }
+
   toArray() {
     return this.commandBeforeInput.concat(
       this.command,
@@ -407,9 +470,11 @@ export default class CommandBuilder {
       [this.outputPath],
     );
   }
+
   checkMerge() {
     // todo
   }
+
   merge(inputs) {
     let concatText = '';
     for (const input of inputs) {
