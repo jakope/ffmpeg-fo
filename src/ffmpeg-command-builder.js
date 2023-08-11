@@ -124,7 +124,18 @@ export default class CommandBuilder {
     return new this(profileName, { videocodex: this.videocodex });
   }
 
-  static createSilectAudio() {}
+  static createSilentAudio() {
+    this.add([
+      '-f',
+      'lavfi',
+      '-i',
+      'anullsrc=channel_layout=stereo:sample_rate=44100',
+    ]);
+
+    this.addFilterComplex1(`;atempo=1.0[audio];`);
+
+    this.overlayInputIndex++;
+  }
 
   async run() {
     !this.isReady && this.finalizeCommand();
@@ -310,42 +321,71 @@ export default class CommandBuilder {
     return this;
   }
 
-  addOverlay(url, position = 'lefttop', percent = 10) {
-    this.add(['-i', url]);
+  addOverlay(
+    url,
+    position = 'lefttop',
+    percent = 10,
+    overlayPaddingXPercent = 0,
+    overlayPaddingYPercent = 0,
+  ) {
+    if (
+      !this.command.includes('anullsrc=channel_layout=stereo:sample_rate=44100')
+    ) {
+      this.add([
+        '-f',
+        'lavfi',
+        '-i',
+        'anullsrc=channel_layout=stereo:sample_rate=44100',
+      ]);
+      this.overlayInputIndex += 1;
+    }
 
+    this.add(['-i', url]);
     this.overlayInputIndex += 1;
 
-    let positionString = '';
-    if (position.indexOf('left') > -1) {
-      positionString += '0:';
-    } else if (position.indexOf('center') > -1) {
-      positionString += '(W-w)/2:';
-    } else {
-      positionString += 'W-w:';
-    }
-    if (position.indexOf('top') > -1) {
-      positionString += '0';
-    } else if (position.indexOf('middle') > -1) {
-      positionString += '(H-h)/2';
-    } else {
-      positionString += 'H-h';
-    }
     const width = (this.profile.width * percent) / 100;
     console.log('width', this.profile.width, percent, width);
     const height = (this.profile.height * percent) / 100;
+
+    let paddingWidth = (width * overlayPaddingXPercent) / 100;
+    let paddingHeight = (height * overlayPaddingYPercent) / 100;
+
+    let positionString = '';
+    if (position.indexOf('left') > -1) {
+      positionString += `${paddingWidth}:`;
+    } else if (position.indexOf('center') > -1) {
+      positionString += '(W-w)/2:';
+    } else {
+      positionString += `W-w-${paddingWidth}:`;
+    }
+    if (position.indexOf('top') > -1) {
+      positionString += `${paddingHeight}`;
+    } else if (position.indexOf('middle') > -1) {
+      positionString += '(H-h)/2';
+    } else {
+      positionString += `H-h-${paddingHeight}`;
+    }
+
     if (!this.filterComplex1) {
       this.addFilterComplex1(
         `[0:v]   scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=decrease [videoinput${this.overlayInputIndex}]`,
       );
     }
+
     this.addFilterComplex1(
       `;[${this.overlayInputIndex}:v] scale=${width}:${height}:force_original_aspect_ratio=decrease [ovrl${this.overlayInputIndex}]`,
     );
+
+    this.filterComplex2 = this.filterComplex2.replace(';atempo=1.0[audio]', '');
+
     this.addFilterComplex2(
       `;[videoinput${this.overlayInputIndex}][ovrl${
         this.overlayInputIndex
-      }] overlay=${positionString} [videoinput${this.overlayInputIndex + 1}]`,
+      }] overlay=${positionString} [videoinput${
+        this.overlayInputIndex + 1
+      }];atempo=1.0[audio]`,
     );
+
     return this;
   }
 
@@ -417,6 +457,8 @@ export default class CommandBuilder {
         `${this.filterComplex1}${this.filterComplex2}`,
         `-map`,
         `[videoinput${this.overlayInputIndex + 1}]`,
+        '-map',
+        '[audio]',
       ]);
     }
     this.add(this.profile[this.videocodexToUse]);
