@@ -64,6 +64,7 @@ export default class CommandBuilder {
   handleProgress = (event) => {
     console.log('Progress: ', event);
     this.onProgressFn({ percentage: event.progress });
+    return this;
   };
 
   getFolder() {
