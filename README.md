@@ -1,33 +1,94 @@
-Fluent-ffmpeg is awesome. But for beginnners it's an overhead. If you just to transcode a video to mp4 use best practices for Resolution, Bitrate, FPS, etc AND use hardware acceleration without any knowledge about encoders like videotoolbox, cuda, etc. you can use this library. 
+# ffmpeg-fo
 
-It's plain JS, so you can also use this ffmpeg command builder to use it in hypbrid environments like capacitor, cordoa, etx. 
+Your the Captian on the ride to transform some videos. But you are not alone, FFMPEG-FO is you First Officier. Your "Chief Mate" will help you to reach your destination.
 
-Examples for nodejs
+![ChiefMate](assets/logo.png)
 
-Initialize with Hardware Acceleration (if possivble)
+ffmpeg-fo is a command builder tool for ffmpeg written in JavaScript as a class. It is designed to solve all common problems with hardware acceleration and typical export standards. You can use it to generate ffmpeg commands including progress events.
+
+## Installation
+
+You can install ffmpeg-fo using npm:
 
 ```
-import ffmpegCommander from '@jakope/beginner-ffmpeg/node/ffmpeg-command-builder-node.js';
-const folder = "Any/Path/To/Write/Temporary_Files";
-ffmpegCommander.initialize({ folder, autoFindHwaccel : true});
-```
-That's it. ffmpegCommander will iterate over common hwaccel methods by testing the method. If it works, the first codec will be used.
-
-Convert a Video to mp4 to FULLD without changing the aspect ratio
-```
-import ffmpegCommander from '@jakope/beginner-ffmpeg/node/ffmpeg-command-builder-node.js';
-const inputVideoPath = "Any/Path/To/A/video.mov"
-const outputVideoPath = "Any/Path/To/A/video_converted.mp4"
-
-ffmpegCommander.create("FULLHD").addVideoInput(inputVideo).scale().outputTo(outputVideoPath).run();
+npm install ffmpeg-fo
 ```
 
-Convert a Video to mp4 to FULLD with changing the aspect ration by adding a black Line on the left and right if neccessary;
-You will get a video with exactly 1920px width and 1080 pixel height;
-```
-import ffmpegCommander from '@jakope/beginner-ffmpeg/node/ffmpeg-command-builder-node.js';
-const inputVideoPath = "Any/Path/To/A/video.mov"
-const outputVideoPath = "Any/Path/To/A/video_converted.mp4"
+## Usage
 
-ffmpegCommander.create("FULLHD").addVideoInput(inputVideo).pad().outputTo(outputVideoPath).run();
+To use ffmpeg-fo, simply import the CommandBuilder class and create a new instance:
+
+```javascript
+import CommandBuilder from 'ffmpeg-fo';
+
+const builder = new CommandBuilder('profileName', { videocodex: 'h264' });
 ```
+
+You can then use the builder instance to set input and output paths, add filters, and generate the ffmpeg command:
+
+```javascript
+builder.setInputPath('/path/to/input/file.mp4');
+builder.setOutputPath('/path/to/output/file.mp4');
+builder.addVideoFilter('scale=1920:1080');
+builder.addAudioFilter('volume=2.0');
+const command = builder.buildCommand();
+```
+
+You can also listen for progress events by passing a function to the `onProgress` method:
+
+```javascript
+builder.onProgress((progress) => {
+  console.log(`Progress: ${progress}%`);
+});
+```
+
+## API
+
+### `CommandBuilder(profileName, options)`
+
+Creates a new instance of the CommandBuilder class.
+
+- `profileName` (string): The name of the profile to use.
+- `options` (object): Optional configuration options.
+  - `videocodex` (string): The video codec to use. Defaults to 'h264'.
+  - `progressEventName` (string): The name of the progress event to listen for. Defaults to 'progress'.
+
+### `setInputPath(path)`
+
+Sets the input path for the ffmpeg command.
+
+- `path` (string): The path to the input file.
+
+### `setOutputPath(path)`
+
+Sets the output path for the ffmpeg command.
+
+- `path` (string): The path to the output file.
+
+### `addVideoFilter(filter)`
+
+Adds a video filter to the ffmpeg command.
+
+- `filter` (string): The filter to add.
+
+### `addAudioFilter(filter)`
+
+Adds an audio filter to the ffmpeg command.
+
+- `filter` (string): The filter to add.
+
+### `onProgress(callback)`
+
+Listens for progress events and calls the specified callback function.
+
+- `callback` (function): The function to call when a progress event is received.
+
+### `buildCommand()`
+
+Generates the ffmpeg command based on the current configuration.
+
+Returns a string containing the ffmpeg command.
+
+## License
+
+ffmpeg-fo is licensed under the MIT License. See the LICENSE file for more information.
