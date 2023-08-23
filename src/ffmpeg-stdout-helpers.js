@@ -11,6 +11,66 @@ export const extractDuration = function (str) {
   }
   return;
 };
+
+export const extractFileStats = function (str) {
+  if (str) {
+    // Check if it is the Stats Output
+    const inputLineRegex = /Input #0.+/;
+
+    // Find the metadata lines
+    const durationLineRegex = /Duration:.+/;
+    const videoInputStreamRegex = /Stream #0:0.+: Video:.+/;
+    const audioInputStreamRegex = /Stream #0:1.+: Audio:.+/;
+
+    const inputLine = str.match(inputLineRegex);
+    const durationLine = str.match(durationLineRegex);
+    const videoInputStream = str.match(videoInputStreamRegex);
+    const audioInputStream = str.match(audioInputStreamRegex);
+
+    // Extract Data
+    let duration;
+    let bitrate;
+    let codec;
+    let resolution;
+    let width;
+    let height;
+    let fps;
+
+    if (durationLine) {
+      const durationRegex = /\d{2}:\d{2}:\d{2}.\d{2}/;
+      const bitrateRegex = /(?<=bitrate: )\d+(?= kb\/s)/;
+      duration = durationLine[0].match(durationRegex);
+      bitrate = durationLine[0].match(bitrateRegex);
+    }
+
+    if (videoInputStream) {
+      const codecRegex = /(?<=Video: ).+(?= \(.+\) \()/;
+      const resolutionRegex = /(?<=, )\d{3,4}x\d{3,4}(?= \[.+\])/;
+      const fpsRegex = /(?<=, )\d+\.*\d*(?= fps, )/;
+      codec = videoInputStream[0].match(codecRegex);
+      fps = videoInputStream[0].match(fpsRegex);
+      resolution = videoInputStream[0].match(resolutionRegex);
+
+      if (resolution) {
+        width = resolution[0].split('x')[0];
+        height = resolution[0].split('x')[1];
+      }
+    }
+
+    return {
+      duration: duration ? parseTimeToSeconds(duration[0]) : null,
+      bitrate: bitrate ? Number(bitrate[0]) : null,
+      codec: codec ? codec[0] : null,
+      width: width ? Number(width) : null,
+      height: height ? Number(height) : null,
+      fps: fps ? Number(fps[0]) : null,
+      successful: true,
+    };
+  } else {
+    return { successful: false };
+  }
+};
+
 export const extractTime = function (str) {
   const regex = /time=(\d{2}):(\d{2}):(\d{2}\.\d{2})/;
   const match = regex.exec(str);
@@ -70,4 +130,5 @@ export default {
   parseTimeToSeconds,
   formatSecondsAsTime,
   calculateProgress,
+  extractFileStats,
 };

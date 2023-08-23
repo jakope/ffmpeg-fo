@@ -22,6 +22,7 @@ export default class CommandBuilder {
   inputPath;
   outputPath;
   exportType = 'video';
+  headerLogs = '';
 
   videoFilter = [];
   filterComplex1 = '';
@@ -205,6 +206,10 @@ export default class CommandBuilder {
         this.setProgress(progress);
       }
     }
+
+    if (str && !str.startsWith('frame=')) {
+      this.headerLogs += str;
+    }
   }
 
   setProgress(progress) {
@@ -234,15 +239,29 @@ export default class CommandBuilder {
     }
   }
 
-  async stats() {
-    this.add(['-f', '']);
-    const response = await this.constructor.execute(this.toArray(), this);
+  async runStats(videoFilepath) {
+    const statsFFMPEGCommand = [
+      '-i',
+      videoFilepath,
+      '-vf',
+      'select=gte(n\\,0)',
+      '-vframes',
+      '1',
+      '-f',
+      'null',
+      '-',
+    ];
+
+    const response = await this.constructor.execute(statsFFMPEGCommand, this);
+
+    let extractedStats = { successful: false };
+    if (this.headerLogs) {
+      extractedStats = ffmpegStdoutHelper.extractFileStats(this.headerLogs);
+    }
+
     this.processStdOut(response.error);
-    console.log('this.duration', this.duration);
-    return {
-      duration: this.duration,
-      durationInSeconds: this.durationInSeconds,
-    };
+
+    return extractedStats;
   }
 
   add(command) {
