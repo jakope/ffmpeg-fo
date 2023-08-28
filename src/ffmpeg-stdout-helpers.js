@@ -44,13 +44,13 @@ export const extractFileStats = function (str) {
     }
 
     if (videoInputStream) {
-      const codecRegex = /(?<=Video: ).+(?= \(.+\) \()/;
-      const resolutionRegex = /(?<=, )\d{3,4}x\d{3,4}(?= \[.+\])/;
+      const codecRegex = /(?<=Video: ).+?(?=(,| \(.+\)))/;
+      const resolutionRegex = /(?<=, )\d{3,4}x\d{3,4}(?= ?(, |\[.+\]))/;
       const fpsRegex = /(?<=, )\d+\.*\d*(?= fps, )/;
       codec = videoInputStream[0].match(codecRegex);
       fps = videoInputStream[0].match(fpsRegex);
       resolution = videoInputStream[0].match(resolutionRegex);
-
+      console.log('VIDEO RESOLUTION', resolution);
       if (resolution) {
         width = resolution[0].split('x')[0];
         height = resolution[0].split('x')[1];

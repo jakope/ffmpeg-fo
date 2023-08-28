@@ -103,7 +103,7 @@ export default class CommandBuilder {
         const codex = await testHardwareAcceleration(
           this.execute,
           this.folder,
-          this.fileExists,
+          this.fileExists
         );
         console.log('codex', codex);
         if (codex.length > 0) {
@@ -148,7 +148,7 @@ export default class CommandBuilder {
         console.log('mergeFileText', this.mergeFileText);
         await this.constructor.createFile(
           this.constructor.folder + '/merge.txt',
-          this.mergeFileText,
+          this.mergeFileText
         );
 
         commandArray[
@@ -176,7 +176,7 @@ export default class CommandBuilder {
         'run',
         this.reencodeAudioIsReady,
         this.reencodeVideoIsReady,
-        this.isReady,
+        this.isReady
       );
       !this.reencodeVideoIsReady && this.reencodeVideo();
       !this.reencodeAudioIsReady && this.reencodeAudio();
@@ -201,7 +201,7 @@ export default class CommandBuilder {
         const progressRelevantDuration = this.progressDuration || this.duration;
         const progress = ffmpegStdoutHelper.calculateProgress(
           time,
-          progressRelevantDuration,
+          progressRelevantDuration
         );
         this.setProgress(progress);
       }
@@ -256,6 +256,7 @@ export default class CommandBuilder {
 
     let extractedStats = { successful: false };
     if (this.headerLogs) {
+      console.log('HEADER LOGS', this.headerLogs);
       extractedStats = ffmpegStdoutHelper.extractFileStats(this.headerLogs);
     }
 
@@ -335,8 +336,8 @@ export default class CommandBuilder {
   addEmptyVideo(duration = 1, color = 'black') {
     this.addOverwriteAndWhitelist().add(
       `-f lavfi -i color=${color}:duration=${duration}:size=${this.profile.width}x${this.profile.height}:rate=30,format=rgb24 -pix_fmt yuv420p -t 1`.split(
-        ' ',
-      ),
+        ' '
+      )
     );
     return this;
   }
@@ -346,7 +347,7 @@ export default class CommandBuilder {
     position = 'lefttop',
     percent = 10,
     overlayPaddingXPercent = 0,
-    overlayPaddingYPercent = 0,
+    overlayPaddingYPercent = 0
   ) {
     if (
       !this.command.includes('anullsrc=channel_layout=stereo:sample_rate=44100')
@@ -388,12 +389,12 @@ export default class CommandBuilder {
 
     if (!this.filterComplex1) {
       this.addFilterComplex1(
-        `[0:v]   scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=decrease [videoinput${this.overlayInputIndex}]`,
+        `[0:v]   scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=decrease [videoinput${this.overlayInputIndex}]`
       );
     }
 
     this.addFilterComplex1(
-      `;[${this.overlayInputIndex}:v] scale=${width}:${height}:force_original_aspect_ratio=decrease [ovrl${this.overlayInputIndex}]`,
+      `;[${this.overlayInputIndex}:v] scale=${width}:${height}:force_original_aspect_ratio=decrease [ovrl${this.overlayInputIndex}]`
     );
 
     this.filterComplex2 = this.filterComplex2.replace(';atempo=1.0[audio]', '');
@@ -403,7 +404,7 @@ export default class CommandBuilder {
         this.overlayInputIndex
       }] overlay=${positionString} [videoinput${
         this.overlayInputIndex + 1
-      }];atempo=1.0[audio]`,
+      }];atempo=1.0[audio]`
     );
 
     return this;
@@ -413,7 +414,7 @@ export default class CommandBuilder {
     this.fastSeek(ffmpegStdoutHelper.parseTimeToSeconds(start));
     this.progressDuration = ffmpegStdoutHelper.formatSecondsAsTime(
       ffmpegStdoutHelper.parseTimeToSeconds(end) -
-        ffmpegStdoutHelper.parseTimeToSeconds(start),
+        ffmpegStdoutHelper.parseTimeToSeconds(start)
     );
     this.add([
       '-ss',
@@ -445,11 +446,11 @@ export default class CommandBuilder {
   scale(type) {
     if (type == 'pad') {
       this.videoFilter.push(
-        `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1,pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`,
+        `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1,pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`
       );
     } else {
       this.videoFilter.push(
-        `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1`,
+        `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1`
       );
     }
     return this;
@@ -529,7 +530,7 @@ export default class CommandBuilder {
     return this.commandBeforeInput.concat(
       this.command,
       this.commandAfterCodex,
-      [this.outputPath],
+      [this.outputPath]
     );
   }
 
@@ -553,6 +554,13 @@ export default class CommandBuilder {
       '-c',
       'copy',
     ]);
+    this.reencodeVideoIsReady = true;
+    this.reencodeAudioIsReady = true;
+    return this;
+  }
+
+  copyCodecToMp4() {
+    this.addOverwriteAndWhitelist().add(['-c:v', 'copy', '-c:a', 'copy']);
     this.reencodeVideoIsReady = true;
     this.reencodeAudioIsReady = true;
     return this;
