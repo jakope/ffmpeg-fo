@@ -4,6 +4,7 @@ import { testHardwareAcceleration } from './ffmpeg-hwaccel.js';
 export default class CommandBuilder {
   static findCodex;
   static videocodex = 'h264';
+  static possibleCodex = ['h264'];
   static profiles = ffmpegStandardResolutions;
   static folder;
   static execute(command) {
@@ -16,8 +17,12 @@ export default class CommandBuilder {
 
   reencodeVideoIsReady = false;
   reencodeAudioIsReady = false;
-  videocodexToUse;
   isReady = false;
+
+  hasAnyInput = false;
+
+  videocodexToUse;
+  
   profile;
   inputPath;
   outputPath;
@@ -50,6 +55,10 @@ export default class CommandBuilder {
 
     this.onProgressFn = () => {};
     this.onErrorFn = () => {};
+  }
+
+  cancel(){
+    console.log("cancel execute here");
   }
 
   onProgress(onProgress) {
@@ -92,6 +101,9 @@ export default class CommandBuilder {
     options.videocodex && (this.videocodex = options.videocodex);
     options.folder && (this.folder = options.folder);
     options.folderAsync && (this.folder = await options.folderAsync);
+    if(options.forceAutoFindHwaccel){
+      options.autoFindHwaccel = true;
+    }
     if (this.folder && options.autoFindHwaccel) {
       console.log('this.folder', this.folder);
       if (
@@ -99,6 +111,7 @@ export default class CommandBuilder {
         (await this.loadSettings('videocodex'))
       ) {
         this.videocodex = await this.loadSettings('videocodex');
+        this.possibleCodex = await this.loadSettings('possibleCodex');
       } else {
         const codex = await testHardwareAcceleration(
           this.execute,
@@ -106,9 +119,11 @@ export default class CommandBuilder {
           this.fileExists
         );
         console.log('codex', codex);
+        this.possibleCodex = this.possibleCodex.concat(codex);
         if (codex.length > 0) {
           this.videocodex = codex[0];
           this.storeSettings('videocodex', this.videocodex);
+          this.storeSettings('possibleCodex', this.possibleCodex);
           console.log('stored');
         }
       }
@@ -256,10 +271,8 @@ export default class CommandBuilder {
 
     let extractedStats = { successful: false };
     if (this.headerLogs) {
-      console.log('HEADER LOGS', this.headerLogs);
       extractedStats = ffmpegStdoutHelper.extractFileStats(this.headerLogs);
     }
-
     this.processStdOut(response.error);
 
     return extractedStats;
@@ -321,6 +334,7 @@ export default class CommandBuilder {
 
   /* start functions */
   addImageInput(url, duration = 1) {
+    !this.hasAnyInput && (this.hasAnyInput = true);
     this.addOverwriteAndWhitelist().add(['-loop', '1', '-i', url]);
     // '-f','lavfi','-i',`anullsrc=channel_layout=stereo:sample_rate=48000`
     this.addAfterCodex(['-t', duration, '-framerate', '1']);
@@ -328,12 +342,14 @@ export default class CommandBuilder {
   }
 
   addVideoInput(url) {
+    !this.hasAnyInput && (this.hasAnyInput = true);
     this.inputPath = url;
     this.addOverwriteAndWhitelist().add(['-i', url]);
     return this;
   }
 
   addEmptyVideo(duration = 1, color = 'black') {
+    !this.hasAnyInput && (this.hasAnyInput = true);
     this.addOverwriteAndWhitelist().add(
       `-f lavfi -i color=${color}:duration=${duration}:size=${this.profile.width}x${this.profile.height}:rate=30,format=rgb24 -pix_fmt yuv420p -t 1`.split(
         ' '

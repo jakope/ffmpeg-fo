@@ -21,15 +21,7 @@ const command = ["-y","-hwaccel",`${hardwareMethod}`,`-i`,`${inputFilePath}`,`-c
 // const start = new Date();
 let response = await runFFMPEGCommandCallback(command);
 response.outputFileExists  = await fileExistsCallback(`${outputFilePath}_${hardwareMethod}.mp4`);
-console.log("createTestVideoResponse", response);
-// if(response.success && response.all){
-//   const end = new Date();
-//   const elapsedTime = end - start;
-//   const hardwareUsed = response.all.includes(`using ${hardwareMethod} hardware acceleration`);
-//   performanceResults[hardwareMethod] = { elapsedTime, hardwareUsed };
-//   console.log(`${hardwareMethod}: ${elapsedTime}ms, hardware used: ${hardwareUsed}`);
-// }
 return {...response, hardwareMethod : `${videoCodec}_${hardwareMethod}` };
 }));
-return responses.filter((response)=>{ return response.success && response.outputFileExists }).map(response => response.hardwareMethod);
+return responses.filter((response)=>{ return response.outputFileExists }).map(response => response.hardwareMethod);
 }

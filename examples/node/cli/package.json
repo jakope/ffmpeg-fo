@@ -1,0 +1,41 @@
+{
+	"name": "ffmpeg-fo-node-cli",
+	"description": "Functions for ffmpeg-fo for testing purposes",
+	"version": "0.0.1",
+	"type": "module",
+	"license": "UNLICENSED",
+	"bin": {
+		"ffmpeg-fo": "index.js",
+		"mp4": "index.js"
+	},
+	"author": {
+		"name": "Janos Koschwtiz",
+		"email": "janos@koschwitz.biz",
+		"url": "koschwitz.biz"
+	},
+	"keywords": [
+		"ffmpeg-fo",
+		"Janos Koschwtiz"
+	],
+	"files": [
+		"index.js",
+		"utils"
+	],
+	"scripts": {
+		"format": "prettier --write \"./**/*.{js,json}\""
+	},
+	"dependencies": {
+		"chalk": "^4.1.2",
+		"cli-alerts": "^1.2.2",
+		"cli-handle-error": "^4.4.0",
+		"cli-handle-unhandled": "^1.1.1",
+		"cli-meow-help": "^3.1.0",
+		"cli-welcome": "^2.2.2",
+		"meow": "^9.0.0",
+		"inquirer": "^9.2.11",
+		"spinnies": "^0.5.1"
+	},
+	"devDependencies": {
+		"prettier": "^3.0.3"
+	}
+}

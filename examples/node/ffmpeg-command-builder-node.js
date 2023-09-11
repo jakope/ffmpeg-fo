@@ -1,17 +1,17 @@
 import {execa} from 'execa';
 import pathToFfmpeg from 'ffmpeg-static';
-import CommandBuilder from '../src/ffmpeg-command-builder.js';
+import CommandBuilder from '../../src/ffmpeg-command-builder.js';
 import { Writable } from 'stream'
 import fs from 'fs';
 import path from 'path';
 import { URL } from 'url';
-const __dirname = new URL('.', import.meta.url).pathname;
+const outputFolder = new URL('.', import.meta.url).pathname + "/output";
 
 export default class CommandBuilderNode extends CommandBuilder{
     constructor(){
         super(...arguments);
     }
-    static folder = __dirname; // overwrite me
+    static folder = outputFolder; // overwrite me
     static async createFile(outputFilepath,data){
         await fs.promises.writeFile(outputFilepath, data);
     };
@@ -27,6 +27,9 @@ export default class CommandBuilderNode extends CommandBuilder{
         const folder = path.dirname(outputFilepath);
         await fs.promises.rm(folder + "/*", { recursive: true });
     };
+    static async fileExists(outputFilepath){
+        return fs.existsSync(outputFilepath);
+    };
     static async execute(command, self) {
         let error, success;
         try {
@@ -38,10 +41,15 @@ export default class CommandBuilderNode extends CommandBuilder{
                     }
                     callback();
                 }
-              });  
-            const childProcess = execa(`${pathToFfmpeg}`, command, { all: true, stdout : "pipe" }).pipeAll(myWriteStream)
+              });
+            const abortController = new AbortController();
+            const childProcess = execa(`${pathToFfmpeg}`, command, { all: true, stdout : "pipe", signal: abortController.signal }).pipeAll(myWriteStream);
+            if(self){
+                self.cancel = ()=>{
+                    abortController.abort();
+                };
+            }
             const answer = await childProcess;
-            console.log("answer",answer.all);
                 return {
                     ...answer,
                     success : true,
@@ -49,7 +57,9 @@ export default class CommandBuilderNode extends CommandBuilder{
                 }
             
         } catch (err) {
-            console.log("catch",err.all);
+            if(self){
+                console.log("catch",err.all);
+            }
          error = err;   
          success = false;
         }
