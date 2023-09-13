@@ -22,7 +22,7 @@ export default class CommandBuilder {
   hasAnyInput = false;
 
   videocodexToUse;
-  
+
   profile;
   inputPath;
   outputPath;
@@ -57,8 +57,8 @@ export default class CommandBuilder {
     this.onErrorFn = () => {};
   }
 
-  cancel(){
-    console.log("cancel execute here");
+  cancel() {
+    console.log('cancel execute here');
   }
 
   onProgress(onProgress) {
@@ -101,7 +101,7 @@ export default class CommandBuilder {
     options.videocodex && (this.videocodex = options.videocodex);
     options.folder && (this.folder = options.folder);
     options.folderAsync && (this.folder = await options.folderAsync);
-    if(options.forceAutoFindHwaccel){
+    if (options.forceAutoFindHwaccel) {
       options.autoFindHwaccel = true;
     }
     if (this.folder && options.autoFindHwaccel) {
@@ -414,11 +414,17 @@ export default class CommandBuilder {
     );
 
     this.filterComplex2 = this.filterComplex2.replace(';atempo=1.0[audio]', '');
+    this.filterComplex2 = this.filterComplex2.replace(
+      `,pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`,
+      ''
+    );
 
     this.addFilterComplex2(
       `;[videoinput${this.overlayInputIndex}][ovrl${
         this.overlayInputIndex
-      }] overlay=${positionString} [videoinput${
+      }] overlay=${positionString},pad=${this.profile.width}:${
+        this.profile.height
+      }:(ow-iw)/2:(oh-ih)/2 [videoinput${
         this.overlayInputIndex + 1
       }];atempo=1.0[audio]`
     );
@@ -462,7 +468,7 @@ export default class CommandBuilder {
   scale(type) {
     if (type == 'pad') {
       this.videoFilter.push(
-        `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1,pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`
+        `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1,setdar=${this.profile.width}/${this.profile.height},setsar=1,pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`
       );
     } else {
       this.videoFilter.push(
@@ -576,7 +582,14 @@ export default class CommandBuilder {
   }
 
   copyCodecToMp4() {
-    this.addOverwriteAndWhitelist().add(['-c:v', 'copy', '-c:a', 'copy', '-movflags' , '+faststart']);
+    this.addOverwriteAndWhitelist().add([
+      '-c:v',
+      'copy',
+      '-c:a',
+      'copy',
+      '-movflags',
+      '+faststart',
+    ]);
     this.reencodeVideoIsReady = true;
     this.reencodeAudioIsReady = true;
     return this;
