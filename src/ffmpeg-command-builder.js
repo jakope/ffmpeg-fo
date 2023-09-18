@@ -468,7 +468,7 @@ export default class CommandBuilder {
   scale(type) {
     if (type == 'pad') {
       this.videoFilter.push(
-        `scale=w=${this.profile.width}:h=${this.profile.height}:force_original_aspect_ratio=1,pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`
+        `pad=${this.profile.width}:${this.profile.height}:(ow-iw)/2:(oh-ih)/2`
       );
     } else {
       this.videoFilter.push(
