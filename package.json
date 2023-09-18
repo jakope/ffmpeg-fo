@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "pub": "npm version patch && git push && npm publish --access public",
-    "publish": "npm publish --access public"
+    "publish:only": "npm publish --access public"
   },
   "author": "",
   "type": "module",
