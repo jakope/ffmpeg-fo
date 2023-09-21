@@ -11,6 +11,7 @@ const hardwareAccelerationMethods = [
 'amf',
 'videotoolbox',
 'omx', //android or rasberry py
+'mediacodec', //android
 ];
 const performanceResults = {};
 const responses = await Promise.all(hardwareAccelerationMethods.map(async (hardwareMethod) => {

@@ -327,7 +327,7 @@ export default class CommandBuilder {
       '-hwaccel',
       'auto',
       '-protocol_whitelist',
-      'file,http,https,tcp,tls',
+      'file,http,https,tcp,tls,saf',
     ]);
     return this;
   }
