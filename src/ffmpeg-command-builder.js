@@ -29,6 +29,8 @@ export default class CommandBuilder {
   exportType = 'video';
   headerLogs = '';
 
+  eventName = null;
+
   videoFilter = [];
   filterComplex1 = '';
   filterComplex2 = '';
