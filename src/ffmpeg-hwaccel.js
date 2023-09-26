@@ -42,7 +42,8 @@ export const testHardwareAcceleration = async function (
     // const start = new Date();
     let response = await runFFMPEGCommandCallback(command);
     response.outputFileExists = await fileExistsCallback(
-      `${outputFilePath}_${hardwareMethod}.mp4`
+      `${outputFilePath}_${hardwareMethod}.mp4`,
+      `out_${hardwareMethod}.mp4`
     );
     responses.push({
       ...response,
