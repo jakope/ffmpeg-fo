@@ -589,14 +589,7 @@ export default class CommandBuilder {
   }
 
   copyCodecToMp4() {
-    this.addOverwriteAndWhitelist().add([
-      '-c:v',
-      'copy',
-      '-c:a',
-      'copy',
-      '-movflags',
-      '+faststart',
-    ]);
+    this.addOverwriteAndWhitelist().add(['-c:v', 'copy', '-c:a', 'copy']);
     this.reencodeVideoIsReady = true;
     this.reencodeAudioIsReady = true;
     return this;
