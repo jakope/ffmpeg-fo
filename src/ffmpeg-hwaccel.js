@@ -22,31 +22,34 @@ export const testHardwareAcceleration = async function (
     'mediacodec', //android
   ];
   const performanceResults = {};
-  const responses = await Promise.all(
-    hardwareAccelerationMethods.map(async (hardwareMethod) => {
-      console.log(`Test ${hardwareMethod}`);
-      // Construct the FFmpeg command to test the hardware acceleration method
-      const command = [
-        '-y',
-        '-hwaccel',
-        `${hardwareMethod}`,
-        `-i`,
-        `${inputFilePath}`,
-        `-c:v`,
-        `${videoCodec}_${hardwareMethod}`,
-        `-profile:v`,
-        `main`,
-        `${outputFilePath}_${hardwareMethod}.mp4`,
-      ];
+  let responses = [];
+  for (let hardwareMethod of hardwareAccelerationMethods) {
+    console.log(`Test ${hardwareMethod}`);
+    // Construct the FFmpeg command to test the hardware acceleration method
+    const command = [
+      '-y',
+      '-hwaccel',
+      `${hardwareMethod}`,
+      `-i`,
+      `${inputFilePath}`,
+      `-c:v`,
+      `${videoCodec}_${hardwareMethod}`,
+      `-profile:v`,
+      `main`,
+      `${outputFilePath}_${hardwareMethod}.mp4`,
+    ];
 
-      // const start = new Date();
-      let response = await runFFMPEGCommandCallback(command);
-      response.outputFileExists = await fileExistsCallback(
-        `${outputFilePath}_${hardwareMethod}.mp4`
-      );
-      return { ...response, hardwareMethod: `${videoCodec}_${hardwareMethod}` };
-    })
-  );
+    // const start = new Date();
+    let response = await runFFMPEGCommandCallback(command);
+    response.outputFileExists = await fileExistsCallback(
+      `${outputFilePath}_${hardwareMethod}.mp4`
+    );
+    responses.push({
+      ...response,
+      hardwareMethod: `${videoCodec}_${hardwareMethod}`,
+    });
+  }
+
   return responses
     .filter((response) => {
       return response.outputFileExists;
