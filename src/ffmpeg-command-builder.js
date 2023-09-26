@@ -284,6 +284,11 @@ export default class CommandBuilder {
     this.command = this.command.concat(command);
   }
 
+  makeMp4Streamable() {
+    this.addAfterCodex(['-movflags', '+faststart']);
+    return this;
+  }
+
   addAfterCodex(command) {
     this.commandAfterCodex = this.commandAfterCodex.concat(command);
   }
