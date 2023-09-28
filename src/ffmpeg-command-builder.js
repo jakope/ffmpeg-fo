@@ -206,7 +206,7 @@ export default class CommandBuilder {
   processStdOut(str) {
     if (!this.duration) {
       const durationResponse = ffmpegStdoutHelper.extractDuration(str);
-      console.log('search', durationResponse);
+
       if (durationResponse) {
         //self.bitrate = self.extractBitrate(str);
         this.duration = durationResponse.duration;
