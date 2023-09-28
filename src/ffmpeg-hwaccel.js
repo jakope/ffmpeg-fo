@@ -1,3 +1,13 @@
+export const hardwareAccelerationMethods = [
+  'nvenc',
+  'qsv',
+  'vaapi',
+  'dxva2',
+  'amf',
+  'videotoolbox',
+  'omx', //android or rasberry py
+  'mediacodec', //android
+];
 export const testHardwareAcceleration = async function (
   runFFMPEGCommandCallback,
   pathToStoreTestFiles = './',
@@ -11,16 +21,6 @@ export const testHardwareAcceleration = async function (
       .concat(inputFilePath)
   );
   const videoCodec = 'h264';
-  const hardwareAccelerationMethods = [
-    'nvenc',
-    'qsv',
-    'vaapi',
-    'dxva2',
-    'amf',
-    'videotoolbox',
-    'omx', //android or rasberry py
-    'mediacodec', //android
-  ];
   const performanceResults = {};
   let responses = [];
   for (let hardwareMethod of hardwareAccelerationMethods) {

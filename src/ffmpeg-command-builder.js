@@ -138,9 +138,10 @@ export default class CommandBuilder {
     return this.videocodex;
   }
 
-  static create(profileName = 'FULLHD') {
-    console.log('ffmpeg CommandBuilder created with codex', this.videocodex);
-    return new this(profileName, { videocodex: this.videocodex });
+  static create(profileName = 'FULLHD', forceCodex) {
+    const codex = forceCodex || this.videocodex;
+    console.log('ffmpeg CommandBuilder created with codex',codex);
+    return new this(profileName, { videocodex: codex });
   }
 
   static createSilentAudio() {
