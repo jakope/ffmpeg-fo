@@ -28,8 +28,6 @@ export const testHardwareAcceleration = async function (
     // Construct the FFmpeg command to test the hardware acceleration method
     const command = [
       '-y',
-      '-hwaccel',
-      `${hardwareMethod}`,
       `-i`,
       `${inputFilePath}`,
       `-c:v`,
@@ -40,7 +38,7 @@ export const testHardwareAcceleration = async function (
     ];
 
     // const start = new Date();
-    let response = await runFFMPEGCommandCallback(command);
+    let response = await runFFMPEGCommandCallback(command, null, true);
     response.outputFileExists = await fileExistsCallback(
       `${outputFilePath}_${hardwareMethod}.mp4`,
       `out_${hardwareMethod}.mp4`

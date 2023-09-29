@@ -140,7 +140,7 @@ export default class CommandBuilder {
 
   static create(profileName = 'FULLHD', forceCodex) {
     const codex = forceCodex || this.videocodex;
-    console.log('ffmpeg CommandBuilder created with codex',codex);
+    console.log('ffmpeg CommandBuilder created with codex', codex);
     return new this(profileName, { videocodex: codex });
   }
 
@@ -259,6 +259,7 @@ export default class CommandBuilder {
 
   async runStats(videoFilepath) {
     const statsFFMPEGCommand = [
+      '-y',
       '-i',
       videoFilepath,
       '-vf',
@@ -332,8 +333,6 @@ export default class CommandBuilder {
     this.addBeforeInput([
       '-hide_banner',
       '-y',
-      '-hwaccel',
-      'auto',
       '-protocol_whitelist',
       'file,http,https,tcp,tls,saf',
     ]);
