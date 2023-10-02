@@ -206,7 +206,11 @@ export default class CommandBuilder {
 
   processStdOut(str) {
     if (!this.duration) {
-      const durationResponse = ffmpegStdoutHelper.extractDuration(str);
+      let durationResponse = ffmpegStdoutHelper.extractDuration(str);
+
+      if (!durationResponse && this.headerLogs) {
+        durationResponse = ffmpegStdoutHelper.extractDuration(this.headerLogs);
+      }
 
       if (durationResponse) {
         //self.bitrate = self.extractBitrate(str);
@@ -259,6 +263,7 @@ export default class CommandBuilder {
 
   async runStats(videoFilepath) {
     const statsFFMPEGCommand = [
+      '-hide_banner',
       '-y',
       '-i',
       videoFilepath,
@@ -277,7 +282,8 @@ export default class CommandBuilder {
     if (this.headerLogs) {
       extractedStats = ffmpegStdoutHelper.extractFileStats(this.headerLogs);
     }
-    this.processStdOut(response.error);
+
+    // this.processStdOut(response.error);
 
     return extractedStats;
   }

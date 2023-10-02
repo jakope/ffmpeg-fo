@@ -1,9 +1,11 @@
 export const extractDuration = function (str) {
-  const regex = /Duration: (\d{2}):(\d{2}):(\d{2}\.\d{2})/;
-  const match = regex.exec(str);
+  const whitespaceRegex = /\s*/g;
+  const regex = /Duration:(\d{2}):(\d{2}):(\d{2}\.\d{2})/;
+  const match = str.replace(whitespaceRegex, '').match(regex);
+
   if (match !== null) {
     const duration = match[0];
-    const durationString = duration.substring(10);
+    const durationString = duration.substring(9);
     return {
       duration: durationString,
       durationInSeconds: parseTimeToSeconds(durationString),
@@ -15,17 +17,18 @@ export const extractDuration = function (str) {
 export const extractFileStats = function (str) {
   if (str) {
     // Check if it is the Stats Output
-    const inputLineRegex = /Input #0.+/;
+    // const inputLineRegex = /Input #0.+/;
 
     // Find the metadata lines
     const durationLineRegex = /Duration:.+/;
     const videoInputStreamRegex = /Stream #0:0.+: Video:.+/;
-    const audioInputStreamRegex = /Stream #0:1.+: Audio:.+/;
+    //const audioInputStreamRegex = /Stream #0:1.+: Audio:.+/;
+    const whitespaceRegex = /\s*/g;
 
-    const inputLine = str.match(inputLineRegex);
+    // const inputLine = str.match(inputLineRegex);
     const durationLine = str.match(durationLineRegex);
     const videoInputStream = str.match(videoInputStreamRegex);
-    const audioInputStream = str.match(audioInputStreamRegex);
+    // const audioInputStream = str.match(audioInputStreamRegex);
 
     // Extract Data
     let duration;
@@ -38,19 +41,26 @@ export const extractFileStats = function (str) {
 
     if (durationLine) {
       const durationRegex = /\d{2}:\d{2}:\d{2}.\d{2}/;
-      const bitrateRegex = /(?<=bitrate: )\d+(?= kb\/s)/;
-      duration = durationLine[0].match(durationRegex);
-      bitrate = durationLine[0].match(bitrateRegex);
+      const bitrateRegex = /(?<=bitrate:)\d+(?=kb\/s)/;
+      duration = durationLine[0]
+        .replace(whitespaceRegex, '')
+        .match(durationRegex);
+      bitrate = durationLine[0]
+        .replace(whitespaceRegex, '')
+        .match(bitrateRegex);
     }
 
     if (videoInputStream) {
-      const codecRegex = /(?<=Video: ).+?(?=(,| \(.+\)))/;
-      const resolutionRegex = /(?<=, )\d{3,4}x\d{3,4}(?= ?(, |\[.+\]))/;
-      const fpsRegex = /(?<=, )\d+\.*\d*(?= fps, )/;
-      codec = videoInputStream[0].match(codecRegex);
-      fps = videoInputStream[0].match(fpsRegex);
-      resolution = videoInputStream[0].match(resolutionRegex);
-      console.log('VIDEO RESOLUTION', resolution);
+      const codecRegex = /(?<=Video:).+?(?=(,|\(.+\)))/;
+      const resolutionRegex = /(?<=,)\d{3,4}x\d{3,4}(?= ?(,|\[.+\]))/;
+      const fpsRegex = /(?<=,)\d+\.*\d*(?=fps,)/;
+      codec = videoInputStream[0]
+        .replace(whitespaceRegex, '')
+        .match(codecRegex);
+      fps = videoInputStream[0].replace(whitespaceRegex, '').match(fpsRegex);
+      resolution = videoInputStream[0]
+        .replace(whitespaceRegex, '')
+        .match(resolutionRegex);
       if (resolution) {
         width = resolution[0].split('x')[0];
         height = resolution[0].split('x')[1];
@@ -72,8 +82,9 @@ export const extractFileStats = function (str) {
 };
 
 export const extractTime = function (str) {
+  const whitespaceRegex = /\s*/g;
   const regex = /time=(\d{2}):(\d{2}):(\d{2}\.\d{2})/;
-  const match = regex.exec(str);
+  const match = str.replace(whitespaceRegex, '').match(regex);
   if (match !== null) {
     const duration = match[0];
     return duration.substring(5);
