@@ -1,6 +1,6 @@
 {
   "name": "@jakope/ffmpeg-fo",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "description": "",
   "private": false,
   "main": "src/ffmpeg-command-builder.js",
