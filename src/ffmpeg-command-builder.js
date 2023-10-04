@@ -342,6 +342,11 @@ export default class CommandBuilder {
       '-protocol_whitelist',
       'file,http,https,tcp,tls,saf',
     ]);
+
+    if (this.videocodexToUse === 'h264_qsv') {
+      this.addBeforeInput(['-init_hw_device', 'qsv=hw']);
+    }
+
     return this;
   }
 
