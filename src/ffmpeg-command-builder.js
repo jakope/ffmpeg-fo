@@ -343,9 +343,9 @@ export default class CommandBuilder {
       'file,http,https,tcp,tls,saf',
     ]);
 
-    if (this.videocodexToUse === 'h264_qsv') {
-      this.addBeforeInput(['-init_hw_device', 'qsv=hw']);
-    }
+    // if (this.videocodexToUse === 'h264_qsv') {
+    //   this.addBeforeInput(['-init_hw_device', 'qsv=hw']);
+    // }
 
     return this;
   }
