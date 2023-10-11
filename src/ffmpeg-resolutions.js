@@ -15,7 +15,7 @@ export default [
       ' '
     ),
     h264_nvenc:
-      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 500k'.split(
+      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 500k -pix_fmt nv12'.split(
         ' '
       ),
     h264_videotoolbox:
@@ -23,7 +23,7 @@ export default [
         ' '
       ),
     h264_qsv:
-      '-c:v h264_qsv -b:v 500k -maxrate:v 500k -bufsize:v 1000k -quality 21'.split(
+      '-c:v h264_qsv -b:v 500k -maxrate:v 500k -bufsize:v 1000k -quality 21 -pix_fmt nv12'.split(
         ' '
       ),
     h264_vaapi:
@@ -54,11 +54,11 @@ export default [
       ' '
     ),
     h264_nvenc:
-      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 1000k'.split(
+      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 1000k -pix_fmt nv12'.split(
         ' '
       ),
     h264_qsv:
-      '-c:v h264_qsv -b:v 1000k -maxrate:v 1000k -bufsize:v 2000k -quality 23'.split(
+      '-c:v h264_qsv -b:v 1000k -maxrate:v 1000k -bufsize:v 2000k -quality 23 -pix_fmt nv12'.split(
         ' '
       ),
     h264_videotoolbox:
@@ -95,11 +95,11 @@ export default [
       ' '
     ),
     h264_nvenc:
-      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 2000k'.split(
+      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 2000k -pix_fmt nv12'.split(
         ' '
       ),
     h264_qsv:
-      '-c:v h264_qsv -b:v 2000k -maxrate:v 2000k -bufsize:v 4000k -quality 25'.split(
+      '-c:v h264_qsv -b:v 2000k -maxrate:v 2000k -bufsize:v 4000k -quality 25 -pix_fmt nv12'.split(
         ' '
       ),
     h264_videotoolbox:
@@ -138,11 +138,11 @@ export default [
       ' '
     ),
     h264_nvenc:
-      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 500k'.split(
+      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 4000k -pix_fmt nv12'.split(
         ' '
       ),
     h264_qsv:
-      '-c:v h264_qsv -b:v 4000k -maxrate:v 4000k -bufsize:v 8000k -quality 27'.split(
+      '-c:v h264_qsv -b:v 4000k -maxrate:v 4000k -bufsize:v 8000k -quality 27 -pix_fmt nv12'.split(
         ' '
       ),
     h264_videotoolbox:
@@ -181,11 +181,11 @@ export default [
       ' '
     ),
     h264_nvenc:
-      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 500k'.split(
+      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 4000k -pix_fmt nv12'.split(
         ' '
       ),
     h264_qsv:
-      '-c:v h264_qsv -b:v 4000k -maxrate:v 4000k -bufsize:v 8000k -quality 29'.split(
+      '-c:v h264_qsv -b:v 4000k -maxrate:v 4000k -bufsize:v 8000k -quality 29 -pix_fmt nv12'.split(
         ' '
       ),
     h264_videotoolbox:
