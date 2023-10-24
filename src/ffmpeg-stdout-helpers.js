@@ -14,6 +14,26 @@ export const extractDuration = function (str) {
   return;
 };
 
+export const extractSpeedDatapoint = function (str) {
+  const whitespaceRegex = /\s*/g;
+  const regex = /speed=(\d+).(\d+)x/;
+  const match = str.replace(whitespaceRegex, '').match(regex);
+
+  if (match !== null) {
+    let speedString = match[0];
+
+    speedString = speedString.replace('speed=', '').replace('x', '');
+
+    return {
+      speedDatapoint: Number(speedString),
+    };
+  }
+
+  return {
+    speedDatapoint: null,
+  };
+};
+
 export const extractFileStats = function (str) {
   if (str) {
     // Check if it is the Stats Output
@@ -122,21 +142,31 @@ export const formatSecondsAsTime = function (secondsToFormat) {
     .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 };
 
-export const calculateProgress = function (currentTime, duration) {
+export const calculateProgress = function (
+  currentTime,
+  duration,
+  speedDatapoints = []
+) {
   const currentSeconds = parseTimeToSeconds(currentTime);
   const durationSeconds = parseTimeToSeconds(duration);
   const progress = currentSeconds / durationSeconds;
   const estimatedTimeRemaining =
     (durationSeconds - currentSeconds) * (1 / progress);
   const progressPercentage = progress * 100;
+
+  const speedAverage =
+    speedDatapoints.reduce((a, b) => a + b, 0) / speedDatapoints.length;
+
   return {
     progress: progressPercentage.toFixed(2),
     estimatedTimeRemaining: formatSecondsAsTime(estimatedTimeRemaining),
+    speedAverage: speedAverage,
   };
 };
 
 export default {
   extractDuration,
+  extractSpeedDatapoint,
   extractTime,
   parseTimeToSeconds,
   formatSecondsAsTime,

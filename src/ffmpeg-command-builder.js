@@ -29,6 +29,8 @@ export default class CommandBuilder {
   exportType = 'video';
   headerLogs = '';
 
+  speedDatapoints = [];
+
   eventName = null;
 
   videoFilter = [];
@@ -223,7 +225,8 @@ export default class CommandBuilder {
         const progressRelevantDuration = this.progressDuration || this.duration;
         const progress = ffmpegStdoutHelper.calculateProgress(
           time,
-          progressRelevantDuration
+          progressRelevantDuration,
+          this.speedDatapoints
         );
         this.setProgress(progress);
       }
@@ -231,6 +234,12 @@ export default class CommandBuilder {
 
     if (str && !str.startsWith('frame=')) {
       this.headerLogs += str;
+    } else {
+      const currentSpeed = ffmpegStdoutHelper.extractSpeedDatapoint(str);
+
+      if (currentSpeed.speedDatapoint) {
+        this.speedDatapoints.push(currentSpeed.speedDatapoint);
+      }
     }
   }
 
