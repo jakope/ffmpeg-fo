@@ -182,7 +182,14 @@ export default class CommandBuilder {
 
       console.log('CommandArray CB After Execute', answer, commandArray);
 
-      this.setProgress({ progress: 100, estimatedTimeRemaining: '00:00:00' });
+      const speedAverage =
+        speedDatapoints.reduce((a, b) => a + b, 0) / speedDatapoints.length;
+
+      this.setProgress({
+        progress: 100,
+        estimatedTimeRemaining: '00:00:00',
+        speedAverage: speedAverage,
+      });
 
       return answer;
     } catch (error) {
