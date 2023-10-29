@@ -183,7 +183,10 @@ export default class CommandBuilder {
       console.log('CommandArray CB After Execute', answer, commandArray);
 
       const speedAverage =
-        speedDatapoints.reduce((a, b) => a + b, 0) / speedDatapoints.length;
+        this.speedDatapoints.reduce((a, b) => a + b, 0) /
+        this.speedDatapoints.length;
+
+      console.log('CommandArray CB After Execute Speed Average:', speedAverage);
 
       this.setProgress({
         progress: 100,
