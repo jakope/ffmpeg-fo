@@ -1,12 +1,12 @@
 {
   "name": "@jakope/ffmpeg-fo",
-  "version": "0.1.29",
+  "version": "0.1.30",
   "description": "",
   "private": false,
   "main": "src/ffmpeg-command-builder.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "pub": "yarn version --patch && git push && yarn publish --access public",
+    "pub": "yarn version --patch && git push && yarn npm publish --access public",
     "publish:only": "yarn publish --access public",
     "lint": "eslint ."
   },
