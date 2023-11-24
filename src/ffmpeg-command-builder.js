@@ -2,46 +2,58 @@ import ffmpegStandardResolutions from './ffmpeg-resolutions.js';
 import ffmpegStdoutHelper from './ffmpeg-stdout-helpers.js';
 import { testHardwareAcceleration } from './ffmpeg-hwaccel.js';
 export default class CommandBuilder {
+  // Static properties for default settings and configurations.
   static findCodex;
-  static videocodex = 'h264';
-  static possibleCodex = ['h264'];
-  static profiles = ffmpegStandardResolutions;
-  static folder;
+  static videocodex = 'h264'; // Default video codec. (libx264)
+  static possibleCodex = ['h264']; // List of possible codecs.
+  static profiles = ffmpegStandardResolutions; // Imported standard resolutions.
+  static folder; // Static folder path for file operations.
+
+  // Static methods to override and adapt to use cases.
+  // Static method to execute a given FFmpeg command.
   static execute(command) {
     console.log('static shit');
   }
+
+  // Static methods for file and folder operations (currently empty implementations).
   static createFile() {}
   static createFolder() {}
   static deleteFile() {}
   static deleteFolder() {}
 
+  // Instance properties for tracking the state of video and audio reencoding and general readiness.
   reencodeVideoIsReady = false;
   reencodeAudioIsReady = false;
   isReady = false;
 
+  // Tracks if any input has been added to the command.
   hasAnyInput = false;
 
-  videocodexToUse;
+  videocodexToUse; // The video codec to be used for the current instance.
 
-  profile;
-  inputPath;
-  outputPath;
-  exportType = 'video';
-  headerLogs = '';
+  // Various properties for configuring the FFmpeg command.
+  profile; // The video profile (resolution, etc.).
+  inputPath; // Path of the input file.
+  outputPath; // Path for the output file.
+  exportType = 'video'; // Type of export (video, image, etc.).
+  headerLogs = ''; // Stores FFmpeg header logs.
 
-  speedDatapoints = [];
+  speedDatapoints = []; // Array to store speed data points for speed calculation.
 
-  eventName = null;
+  eventName = null; // Optional event name for tracking.
 
+  // Filters and settings for video processing.
   videoFilter = [];
   filterComplex1 = '';
   filterComplex2 = '';
-  overlayInputIndex = 0;
+  overlayInputIndex = 0; // Index for overlay inputs.
 
-  command = [];
-  commandBeforeInput = [];
-  commandAfterCodex = [];
+  // Components of the FFmpeg command.
+  command = []; // Main command array.
+  commandBeforeInput = []; // Commands to be added before input file.
+  commandAfterCodex = []; // Commands to be added after codec specification.
 
+  // Properties for tracking the progress and quality of the encoding process.
   duration;
   bitrate;
   progress;
@@ -76,8 +88,8 @@ export default class CommandBuilder {
   }
 
   handleProgress = (event) => {
-    console.log('Progress: ', event);
     this.onProgressFn({ percentage: event.progress });
+
     return this;
   };
 
@@ -85,20 +97,12 @@ export default class CommandBuilder {
     return CommandBuilder.folder;
   }
 
-  static async fileExists(filepath) {
-    return false;
-  }
+  static async fileExists() {}
 
-  async createTestVideo(filepath) {}
+  async createTestVideo() {}
 
-  static async storeSettings(name, data) {
-    return false;
-  }
-
-  static async loadSettings(name) {
-    console.log('loadSettings');
-    return false;
-  }
+  static async storeSettings(name, data) {}
+  static async loadSettings(name) {}
 
   static async initialize(options = {}) {
     options.profiles && (this.profiles = options.profiles);
@@ -109,7 +113,6 @@ export default class CommandBuilder {
       options.autoFindHwaccel = true;
     }
     if (this.folder && options.autoFindHwaccel) {
-      console.log('this.folder', this.folder);
       if (
         !options.forceAutoFindHwaccel &&
         (await this.loadSettings('videocodex'))
@@ -122,13 +125,12 @@ export default class CommandBuilder {
           this.folder,
           this.fileExists
         );
-        console.log('codex', codex);
+
         this.possibleCodex = this.possibleCodex.concat(codex);
         if (codex.length > 0) {
           this.videocodex = codex[0];
           this.storeSettings('videocodex', this.videocodex);
           this.storeSettings('possibleCodex', this.possibleCodex);
-          console.log('stored');
         }
       }
     }
@@ -144,19 +146,6 @@ export default class CommandBuilder {
     const codex = forceCodex || this.videocodex;
     console.log('ffmpeg CommandBuilder created with codex', codex);
     return new this(profileName, { videocodex: codex });
-  }
-
-  static createSilentAudio() {
-    this.add([
-      '-f',
-      'lavfi',
-      '-i',
-      'anullsrc=channel_layout=stereo:sample_rate=44100',
-    ]);
-
-    this.addFilterComplex1(`;atempo=1.0[audio];`);
-
-    this.overlayInputIndex++;
   }
 
   async run() {
@@ -186,8 +175,6 @@ export default class CommandBuilder {
         this.speedDatapoints.reduce((a, b) => a + b, 0) /
         this.speedDatapoints.length;
 
-      console.log('CommandArray CB After Execute Speed Average:', speedAverage);
-
       this.setProgress({
         progress: 100,
         estimatedTimeRemaining: '00:00:00',
@@ -202,15 +189,10 @@ export default class CommandBuilder {
 
   finalizeCommand() {
     if (this.exportType == 'video') {
-      console.log(
-        'run',
-        this.reencodeAudioIsReady,
-        this.reencodeVideoIsReady,
-        this.isReady
-      );
       !this.reencodeVideoIsReady && this.reencodeVideo();
       !this.reencodeAudioIsReady && this.reencodeAudio();
     }
+
     !this.outputPathIsReady && this.outputTo();
     this.isReady = true;
     return this;
@@ -309,6 +291,17 @@ export default class CommandBuilder {
 
   add(command) {
     this.command = this.command.concat(command);
+  }
+
+  addSilentAudioFillerToInput() {
+    this.add([
+      '-f',
+      'lavfi',
+      '-i',
+      'anullsrc=channel_layout=stereo:sample_rate=44100',
+    ]);
+
+    return this;
   }
 
   makeMp4Streamable() {
@@ -475,6 +468,19 @@ export default class CommandBuilder {
       ffmpegStdoutHelper.parseTimeToSeconds(end) -
         ffmpegStdoutHelper.parseTimeToSeconds(start)
     );
+    if (
+      !this.command.includes('anullsrc=channel_layout=stereo:sample_rate=44100')
+    ) {
+      this.add([
+        '-f',
+        'lavfi',
+        '-i',
+        'anullsrc=channel_layout=stereo:sample_rate=44100',
+      ]);
+    }
+
+    this.add(this.profile[this.videocodexToUse]);
+
     this.add([
       '-ss',
       start,
@@ -484,6 +490,7 @@ export default class CommandBuilder {
       'make_zero',
       '-copyts',
     ]);
+
     return this;
   }
 
@@ -549,22 +556,39 @@ export default class CommandBuilder {
     return this.reencodeVideo().reencodeAudio();
   }
 
-  outputTo(filepath) {
-    console.log('outputTo');
+  outputTo(filepath, overridingFileExtenson) {
+    // Set default file extension based on export type.
     let extension = '.mp4';
     if (this.exportType == 'image') {
       extension = '.png';
     }
+
+    if (overridingFileExtenson) {
+      extension = `.${overridingFileExtenson}`;
+    }
+
+    // If no filepath is provided, generate one based on the input file path.
     if (!filepath) {
+      // Split the input file path to isolate the extension.
       const tmp = this.inputPath.split('.');
-      const ext = tmp.pop();
+      const ext = tmp.pop(); // Remove the extension part.
+      // Join the remaining parts and append '_out' and the original extension.
       filepath = tmp.join('.') + '_out.' + ext;
     }
+
+    // If the provided or generated filepath does not end with the correct extension,
+    // append the appropriate extension.
     if (filepath.indexOf(extension) == -1) {
       filepath = filepath + extension;
     }
+
+    console.log('OUTPUT PATH', filepath, this.outputPath);
+
+    // Set the instance's outputPath to the determined filepath.
     this.outputPath = filepath;
+    // Mark the outputPath as ready.
     this.outputPathIsReady = true;
+    // Return the current instance for method chaining.
     return this;
   }
 
