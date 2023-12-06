@@ -91,34 +91,34 @@ export default [
     ba: '128k',
     ts_title: '720p',
     master_title: '720p',
-    h264: '-c:v libx264 -crf 21 -b:v 2000k -bufsize 4000k -maxrate 2400k'.split(
+    h264: '-c:v libx264 -crf 21 -b:v 3000k -bufsize 6000k -maxrate 4000k'.split(
       ' '
     ),
     h264_nvenc:
-      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 2000k -pix_fmt nv12'.split(
+      '-c:v h264_nvenc -preset slow -qmin 16 -qmax 28 -cq 18 -b:v 3000k -pix_fmt nv12'.split(
         ' '
       ),
     h264_qsv:
-      '-c:v h264_qsv -b:v 2000k -maxrate:v 2000k -bufsize:v 4000k -quality 25 -pix_fmt nv12'.split(
+      '-c:v h264_qsv -b:v 3000k -maxrate:v 4000k -bufsize:v 6000k -quality 25 -pix_fmt nv12'.split(
         ' '
       ),
     h264_videotoolbox:
-      '-c:v h264_videotoolbox -b:v 2000k -maxrate:v 2000k -bufsize:v 4000k -profile:v main -pix_fmt yuv420p -level:v 4.0'.split(
+      '-c:v h264_videotoolbox -b:v 3000k -maxrate:v 4000k -bufsize:v 6000k -profile:v main -pix_fmt yuv420p -level:v 4.0'.split(
         ' '
       ),
     h264_vaapi:
-      '-c:v h264_vaapi -b:v 2000k -maxrate:v 2000k -bufsize:v 4000k -profile:v main -pix_fmt yuv420p -level:v 4.0'.split(
+      '-c:v h264_vaapi -b:v 3000k -maxrate:v 4000k -bufsize:v 6000k -profile:v main -pix_fmt yuv420p -level:v 4.0'.split(
         ' '
       ),
     h264_dxva2:
-      '-c:v h264_dxva2 2000k -maxrate:v 2000k -bufsize:v 4000k -profile:v main -pix_fmt yuv420p -level:v 4.0'.split(
+      '-c:v h264_dxva2 3000k -maxrate:v 4000k -bufsize:v 6000k -profile:v main -pix_fmt yuv420p -level:v 4.0'.split(
         ' '
       ),
     h264_amf:
-      '-c:v h264_amf -qp 22 -b:v 2000k -bufsize 4000k -maxrate 2400k'.split(
+      '-c:v h264_amf -qp 22 -b:v 3000k -bufsize 6000k -maxrate 4000k'.split(
         ' '
       ),
-    h264_omx: '-c:v h264_omx -b:v 1500k -maxrate 1500k -bufsize 3000k'.split(
+    h264_omx: '-c:v h264_omx -b:v 3000k -maxrate 4000k -bufsize 6000k'.split(
       ' '
     ),
   },
