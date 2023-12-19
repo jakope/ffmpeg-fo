@@ -26,7 +26,7 @@ export const testHardwareAcceleration = async function (
   for (let hardwareMethod of hardwareAccelerationMethods) {
     console.log(`Test ${hardwareMethod}`);
     // Construct the FFmpeg command to test the hardware acceleration method
-    const command = [
+    let command = [
       '-y',
       `-i`,
       `${inputFilePath}`,
@@ -36,6 +36,17 @@ export const testHardwareAcceleration = async function (
       `main`,
       `${outputFilePath}_${hardwareMethod}.mp4`,
     ];
+
+    if (hardwareMethod === 'mediacodec') {
+      command = [
+        '-y',
+        `-i`,
+        `${inputFilePath}`,
+        `-c:v`,
+        `${videoCodec}_${hardwareMethod}`,
+        `${outputFilePath}_${hardwareMethod}.mp4`,
+      ];
+    }
 
     // const start = new Date();
     let response = await runFFMPEGCommandCallback(command, null, false);
