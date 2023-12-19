@@ -13,7 +13,7 @@ export const testHardwareAcceleration = async function (
   pathToStoreTestFiles = './',
   fileExistsCallback
 ) {
-  const inputFilePath = `${pathToStoreTestFiles}/test.mov`;
+  const inputFilePath = `${pathToStoreTestFiles}/test.mp4`;
   const outputFilePath = `${pathToStoreTestFiles}/out`;
   const createTestVideoResponse = await runFFMPEGCommandCallback(
     `-y -f lavfi -i testsrc=duration=5:size=1920x1080:rate=30 -pix_fmt yuv420p -t 1`
